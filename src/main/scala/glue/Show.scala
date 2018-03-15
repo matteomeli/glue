@@ -9,7 +9,9 @@ trait Show[A] {
 object Show {
   def apply[A](implicit S: Show[A]): Show[A] = S
 
-  object ops extends ShowSyntax with ShowInstances
+  object syntax extends ShowSyntax
+
+  object instances extends ShowInstances
 }
 
 trait ShowSyntax {
