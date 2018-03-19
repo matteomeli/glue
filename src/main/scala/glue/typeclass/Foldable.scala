@@ -26,6 +26,8 @@ trait FoldableSyntax {
     def foldLeft[B](z: B)(f: (B, A) => B): B = Foldable[F].foldLeft(self)(z)(f)
     def foldRight[B](z: B)(f: (A, B) => B): B = Foldable[F].foldRight(self)(z)(f)
     def foldMap[B](f: A => B)(implicit M: Monoid[B]): B = Foldable[F].foldMap(self)(f)
+    def combine(implicit M: Monoid[A]): A = Foldable[F].combine(self)
+    def toList: List[A] = Foldable[F].toList(self)
   }
 }
 
