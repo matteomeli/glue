@@ -4,7 +4,7 @@ The simplest approach is to import everything:
 
 ```scala
 import glue._
-import glue.preluse._
+import glue.prelude._
 ```
 
 The `glue._` import brings in all the available *type classes*, such as [Monoid](./typeclasses/Monoid.md). Instead of the all `glue` package, you can import only the type classes you need as well:
