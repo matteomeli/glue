@@ -1,7 +1,7 @@
 package glue.typeclass
 
 trait Monoid[A] {
-  def unit: A
+  val unit: A
   def combine(a1: A, a2: A): A
   def combineAll(as: TraversableOnce[A]): A = as.foldLeft(unit)(combine)
 }
@@ -24,7 +24,12 @@ trait MonoidSyntax {
 
 trait MonoidInstances {
   implicit val stringIsMonoid: Monoid[String] = new Monoid[String] {
-    override def unit: String = ""
-    override def combine(a1: String, a2: String): String = a1 + a2
+    val unit: String = ""
+    def combine(a1: String, a2: String): String = a1 + a2
+  }
+
+  implicit def listIsMonoid[A]: Monoid[List[A]] = new Monoid[List[A]] {
+    val unit: List[A] = List.empty
+    def combine(l: List[A], r: List[A]): List[A] = l ++ r
   }
 }

@@ -1,23 +1,15 @@
 package glue
 
-import scala.language.higherKinds
+import typeclass._
 
-trait Typeclasses {
-  type Foldable[F[_]] = typeclass.Foldable[F]
-  type Monoid[A] = typeclass.Monoid[A]
-  type Show[A] = typeclass.Show[A]
-}
+trait syntax
+  extends FoldableSyntax
+  with MonoidSyntax
+  with ShowSyntax
 
-trait Syntax
-  extends typeclass.FoldableSyntax
-  with typeclass.MonoidSyntax
-  with typeclass.ShowSyntax
+trait instances
+  extends FoldableInstances
+  with MonoidInstances
+  with ShowInstances
 
-trait Instances
-  extends typeclass.FoldableInstances
-  with typeclass.MonoidInstances
-  with typeclass.ShowInstances
-
-trait Prelude extends Typeclasses with Syntax with Instances
-
-object Glue extends Prelude
+object prelude extends syntax with instances

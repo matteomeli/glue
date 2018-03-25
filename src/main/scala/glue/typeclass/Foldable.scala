@@ -33,9 +33,9 @@ trait FoldableSyntax {
 
 trait FoldableInstances {
   implicit val listIsFoldable: Foldable[List] = new Foldable[List] {
-    override def foldLeft[A, B](as: List[A])(z: B)(f: (B, A) => B): B = as.foldLeft(z)(f)
-    override def foldRight[A, B](as: List[A])(z: B)(f: (A, B) => B): B = as.foldRight(z)(f)
-    override def foldMap[A, B](as: List[A])(f: A => B)(implicit M: Monoid[B]): B =
+    def foldLeft[A, B](as: List[A])(z: B)(f: (B, A) => B): B = as.foldLeft(z)(f)
+    def foldRight[A, B](as: List[A])(z: B)(f: (A, B) => B): B = as.foldRight(z)(f)
+    def foldMap[A, B](as: List[A])(f: A => B)(implicit M: Monoid[B]): B =
       as.foldLeft(M.unit)((b, a) => M.combine(b, f(a)))
   }
 }

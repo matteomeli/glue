@@ -1,0 +1,3 @@
+# Typeclasses
+
+[Monoid](./Monoid.md)
