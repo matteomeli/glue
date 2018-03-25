@@ -10,7 +10,7 @@ A monoid instance must satisfy the following laws:
 ## Instance definition
 
 ```scala
-import glue.typeclass.Monoid
+import glue.Monoid
 
 implicit val intAdditionIsMonoid: Monoid[Int] = new Monoid[Int] {
   val unit: Int = 0

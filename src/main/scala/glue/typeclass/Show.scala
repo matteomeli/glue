@@ -1,20 +1,22 @@
 package glue.typeclass
 
-import scala.language.implicitConversions
-
 trait Show[A] {
   def show(a: A): String
 }
 
-object Show extends ShowInstances {
+object Show extends ShowFunctions {
   def apply[A](implicit S: Show[A]): Show[A] = S
 
   object syntax extends ShowSyntax
+
+  object instances extends ShowInstances
+}
+
+trait ShowFunctions {
+  def show[A: Show](a: A): String = Show[A].show(a)
 }
 
 trait ShowSyntax {
-  def show[A: Show](a: A): String = Show[A].show(a)
-
   implicit class ShowOps[A: Show](self: A) {
     def show = Show[A].show(self)
   }

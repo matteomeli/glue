@@ -2,14 +2,14 @@ package glue
 
 import typeclass._
 
-trait syntax
+trait AllSyntax
   extends FoldableSyntax
   with MonoidSyntax
   with ShowSyntax
 
-trait instances
+trait AllInstances
   extends FoldableInstances
   with MonoidInstances
   with ShowInstances
 
-object prelude extends syntax with instances
+object prelude extends AllSyntax with AllInstances

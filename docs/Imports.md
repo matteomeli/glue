@@ -22,10 +22,11 @@ val i: Int = 2
 i.show
 ```
 
-Finally, if you wnat to import à-la-carte instead, you can do so by importing from `glue.typeclass` for the type class, the instances and the syntax you need:
+Finally, if you wnat to import à-la-carte instead, you can do so by importing only what you need for any type class, its functions, its instances and its syntax:
 
 ```scala
-import glue.typeclass.Monoid
-import glue.typeclass.Monoid._
-import glue.typeclass.Monoid.syntax._
+import glue.Monoid
+import glue.Monoid._
+import glue.Monoid.syntax._
+import glue.Monoid.instances._
 ```

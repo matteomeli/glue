@@ -6,17 +6,21 @@ trait Monoid[A] {
   def combineAll(as: TraversableOnce[A]): A = as.foldLeft(unit)(combine)
 }
 
-object Monoid extends MonoidInstances {
+object Monoid extends MonoidFunctions {
   def apply[A](implicit M: Monoid[A]): Monoid[A] = M
 
   object syntax extends MonoidSyntax
+
+  object instances extends MonoidInstances
 }
 
-trait MonoidSyntax {
+trait MonoidFunctions {
   def unit[A: Monoid]: A = Monoid[A].unit
   def combine[A: Monoid](a1: A, a2: A): A = Monoid[A].combine(a1, a2)
   def combineAll[A: Monoid](as: TraversableOnce[A]): A = Monoid[A].combineAll(as)
+}
 
+trait MonoidSyntax {
   implicit class MonoidOps[A: Monoid](self: A) {
     def combine(other: A): A = Monoid[A].combine(self, other)
   }
