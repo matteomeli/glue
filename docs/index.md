@@ -1,4 +1,4 @@
 # Documentation
 
-* [Imports](./Imports.md)
-* [Typeclasses](./typeclasses/Index.md)
+* [Imports](./imports.md)
+* [Typeclasses](./typeclasses/index.md)
