@@ -1,5 +1,6 @@
 import sbt._
 
 object Dependencies {
-  lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.0.3"
+  // Insert dependencies here, like so:
+  // lazy val scalaChcek = "org.scalacheck" %% "scalacheck" % "1.13.4"
 }
