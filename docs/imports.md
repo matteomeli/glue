@@ -22,7 +22,7 @@ val i: Int = 2
 i.show
 ```
 
-Finally, if you wnat to import à-la-carte instead, you can do so by importing only what you need for any type class, its functions, its instances and its syntax:
+Finally, if you want to import à-la-carte instead, you can do so by importing only what you need for any type class, its functions, its instances and its syntax:
 
 ```scala
 import glue.Monoid
