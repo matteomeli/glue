@@ -27,6 +27,6 @@ import glue.prelude._
 val s1: String = "Hello, "
 val s2: String = "world!"
 
-val s: String = s1.combine(s2)
-s.combine(unit[String])
+val s: String = s1.combine(s2)  // s: String =  "Hello, world!"
+s.combine(unit[String]) // res1: String = "Hello, world!"
 ```
