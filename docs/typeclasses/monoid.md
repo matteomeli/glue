@@ -1,6 +1,6 @@
 # Monoid
 
-A monoid is an algebraic structure with a single binary operation and a unique identity element. Thus, a monoid is a *semigroup* with an identity element.
+A monoid is an algebraic structure with a single binary operation and a unique identity element. Thus, a monoid is a *semigroup* extended with an identity element.
 
 A monoid instance must satisfy the following laws:
 * Associativity of the binary operation: `combine(x, combine(y, z)) == combine(combine(x, y), z)`
@@ -14,7 +14,7 @@ import glue.Monoid
 
 implicit val intAdditionIsMonoid: Monoid[Int] = new Monoid[Int] {
   val unit: Int = 0
-  def combine(a1: Int, a2: Int): Int = a1 + a2
+  def combine(i1: Int, i2: Int): Int = i1 + i2
 }
 ```
 
