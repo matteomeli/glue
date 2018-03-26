@@ -1,3 +1,3 @@
 # Typeclasses
 
-* [Monoid](./Monoid.md)
+* [Monoid](./monoid.md)
