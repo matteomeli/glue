@@ -43,4 +43,37 @@ trait FoldableInstances {
     def foldMap[A, B](as: List[A])(f: A => B)(implicit M: Monoid[B]): B =
       as.foldLeft(M.unit)((b, a) => M.combine(b, f(a)))
   }
+
+  implicit val optionIsFoldable: Foldable[Option] = new Foldable[Option] {
+    def foldLeft[A, B](oa: Option[A])(z: B)(f: (B, A) => B): B = oa.map(f(z, _)).getOrElse(z)
+    def foldRight[A, B](oa: Option[A])(z: B)(f: (A, B) => B): B = oa.map(f(_, z)).getOrElse(z)
+    def foldMap[A, B](oa: Option[A])(f: A => B)(implicit M: Monoid[B]): B =
+      oa.map(a => M.combine(f(a), M.unit)).getOrElse(M.unit)
+  }
+
+  implicit val indexedSeqIsFoldable: Foldable[IndexedSeq] = new Foldable[IndexedSeq] {
+    def foldLeft[A, B](as: IndexedSeq[A])(z: B)(f: (B, A) => B): B =
+      as.foldLeft(z)(f)
+    def foldRight[A, B](as: IndexedSeq[A])(z: B)(f: (A, B) => B): B =
+      as.foldRight(z)(f)
+    def foldMap[A, B](as: IndexedSeq[A])(f: A => B)(implicit M: Monoid[B]): B =
+      foldMapB(as)(f)(M)
+
+    def foldMapB[A, B](as: IndexedSeq[A])(f: A => B)(mb: Monoid[B]): B =
+      if (as.length == 0) mb.unit
+      else if (as.length == 1) f(as(0))
+      else {
+        val (left, right) = as.splitAt(as.length / 2)
+        mb.combine(foldMapB(left)(f)(mb), foldMapB(right)(f)(mb))
+      }
+  }
+
+  implicit val streamIsFoldable: Foldable[Stream] = new Foldable[Stream] {
+    def foldLeft[A, B](as: Stream[A])(z: B)(f: (B, A) => B): B =
+      as.foldLeft(z)(f)
+    def foldRight[A, B](as: Stream[A])(z: B)(f: (A, B) => B): B =
+      as.foldRight(z)(f)
+    def foldMap[A, B](as: Stream[A])(f: A => B)(implicit M: Monoid[B]): B =
+      as.foldLeft(M.unit)((b, a) => M.combine(b, f(a)))
+  }
 }

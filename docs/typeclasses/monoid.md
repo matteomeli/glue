@@ -30,8 +30,7 @@ val s2: String = "world!"
 val s: String = s1.combine(s2)  // s: String =  "Hello, world!"
 s.combine(unit[String]) // res1: String = "Hello, world!"
 
-
-implicit val optionIsMonoid[A]: Monoid[Option] = new Monoid[Option] {
+implicit def optionIsMonoid[A]: Monoid[Option[A]] = new Monoid[Option[A]] {
   val unit: Option[A] = None
   def combine(a1: Option[A], a2: Option[A]): Option[A] = a1 orElse a2
 }
