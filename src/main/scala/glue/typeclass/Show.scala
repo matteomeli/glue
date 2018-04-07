@@ -26,11 +26,14 @@ trait ShowFunctions {
   def show[A: Show](a: A): String = Show[A].show(a)
 }
 
-object ShowInterpolator {
-  final case class ToShow(override val toString: String) extends AnyVal
-  object ToShow { implicit def apply[A](a: A)(implicit S: Show[A]): ToShow = ToShow(S.show(a)) }
-  final case class ShowStringContext(val sc: StringContext) extends AnyVal {
-    def show(args: ToShow*): String = sc.s(args: _*)
+object ShowStringContext {
+  final case class InterpolateWithShow(override val toString: String) extends AnyVal
+  object InterpolateWithShow {
+    implicit def apply[A](a: A)(implicit S: Show[A]): InterpolateWithShow = 
+      InterpolateWithShow(S.show(a))
+  }
+  final case class ShowInterpolator(val sc: StringContext) extends AnyVal {
+    def show(args: InterpolateWithShow*): String = sc.s(args: _*)
   }
 }
 
@@ -39,8 +42,8 @@ trait ShowSyntax {
     def show = Show[A].show(self)
   }
 
-  implicit final def showStringContext(sc: StringContext): ShowInterpolator.ShowStringContext =
-    ShowInterpolator.ShowStringContext(sc)
+  implicit final def showInterpolator(sc: StringContext): ShowStringContext.ShowInterpolator =
+    ShowStringContext.ShowInterpolator(sc)
 }
 
 trait ShowInstances {
