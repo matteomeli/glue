@@ -9,6 +9,10 @@ lazy val root = (project in file(".")).
       version      := "0.1.3"
     )),
     name := "Glue",
+    libraryDependencies ++= Seq(
+      scalaTest % Test,
+      scalaCheck % Test
+    ),
     scalacOptions ++= Seq(
       "-deprecation",                      // Emit warning and location for usages of deprecated APIs.
       "-encoding", "utf-8",                // Specify character encoding used by source files.
