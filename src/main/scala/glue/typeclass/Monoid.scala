@@ -47,3 +47,17 @@ trait MonoidInstances {
     def combine(a1: A => A, a2: A => A): A => A = a1 compose a2
   }
 }
+
+trait MonoidLaws[A] {
+  implicit def M: Monoid[A]
+
+  def leftIdentity(a: A): Boolean = M.combine(M.unit, a) == a
+  def rightIdentity(a: A): Boolean = M.combine(a, M.unit) == a
+  def associativity(a1: A, a2: A, a3: A): Boolean =
+    M.combine(a1, M.combine(a2, a3)) == M.combine(M.combine(a1, a2), a3)
+}
+
+object MonoidLaws {
+  def apply[A](implicit m: Monoid[A]): MonoidLaws[A] =
+    new MonoidLaws[A] { def M: Monoid[A] = m }
+}
