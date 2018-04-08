@@ -37,7 +37,9 @@ trait ShowFunctions {
 
 trait ShowSyntax {
   implicit class ShowOps[A: Show](self: A) {
-    def show = Show[A].show(self)
+    def show: String = Show[A].show(self)
+    def print(): Unit = Console.print(show)
+    def println(): Unit = Console.println(show)
   }
 
   implicit final def showInterpolator(sc: StringContext): Show.ShowInterpolator =
