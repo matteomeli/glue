@@ -58,6 +58,6 @@ trait MonoidLaws[A] {
 }
 
 object MonoidLaws {
-  def apply[A](implicit m: Monoid[A]): MonoidLaws[A] =
-    new MonoidLaws[A] { def M: Monoid[A] = m }
+  def apply[A](implicit ev: Monoid[A]): MonoidLaws[A] =
+    new MonoidLaws[A] { def M: Monoid[A] = ev }
 }
