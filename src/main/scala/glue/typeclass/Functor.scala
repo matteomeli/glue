@@ -8,14 +8,14 @@ trait Functor[F[_]] { self =>
   def replaceR[A, B](fa: F[A], b: B): F[B] = map(fa) { _ => b }
   def void[A](fa: F[A]): F[Unit] = map(fa) { _ => () }
   def lift[A, B](f: A => B): F[A] => F[B] = map(_)(f)
-  def applyF[A, B](ff: F[A => B], a: A): F[B] = map(ff)(f => f(a))
-  def compose[A, B, C](fa: F[A])(f: A => B, g: B => C): F[C] = map(fa)(f andThen g)
+  def apply[A, B](ff: F[A => B], a: A): F[B] = map(ff)(f => f(a))
+  def fcompose[A, B, C](fa: F[A])(f: A => B, g: B => C): F[C] = map(fa)(f andThen g)
   def distribute[A, B](fab: F[(A, B)]): (F[A], F[B]) = (map(fab)(_._1), map(fab)(_._2))
   def codistribute[A, B](e: Either[F[A], F[B]]): F[Either[A, B]] = e match {
     case Left(fa) => map(fa)(Left(_))
     case Right(fb) => map(fb)(Right(_))
   }
-  def product[A, B](fa: F[A])(f: A => B): F[(A, B)] = map(fa) { a => (a, f(a)) }
+  def fproduct[A, B](fa: F[A])(f: A => B): F[(A, B)] = map(fa) { a => (a, f(a)) }
   def pair[A](fa: F[A]): F[(A, A)] = map(fa) { a => (a, a) }
   def strengthL[A, B](a: A, fb: F[B]): F[(A, B)] = map(fb) { b => (a, b) }
   def strengthR[A, B](fa: F[A], b: B): F[(A, B)] = map(fa) { a => (a, b) }
@@ -48,11 +48,11 @@ trait FunctorFunctions {
   def replaceR[F[_]: Functor, A, B](fa: F[A], b: B): F[B] = Functor[F].replaceR(fa, b)
   def void[F[_]: Functor, A](fa: F[A]): F[Unit] = Functor[F].void(fa)
   def lift[F[_]: Functor, A, B](f: A => B): F[A] => F[B] = Functor[F].lift(f)
-  def applyF[F[_]: Functor, A, B](ff: F[A => B], a: A): F[B] = Functor[F].applyF(ff, a)
-  def compose[F[_]: Functor, A, B, C](fa: F[A])(f: A => B, g: B => C): F[C] = Functor[F].compose(fa)(f, g)
+  def apply[F[_]: Functor, A, B](ff: F[A => B], a: A): F[B] = Functor[F].apply(ff, a)
+  def fcompose[F[_]: Functor, A, B, C](fa: F[A])(f: A => B, g: B => C): F[C] = Functor[F].fcompose(fa)(f, g)
   def distribute[F[_]: Functor, A, B](fab: F[(A, B)]): (F[A], F[B]) = Functor[F].distribute(fab)
   def codistribute[F[_]: Functor, A, B](e: Either[F[A], F[B]]): F[Either[A, B]] = Functor[F].codistribute(e)
-  def product[F[_]: Functor, A, B](fa: F[A])(f: A => B): F[(A, B)] = Functor[F].product(fa)(f)
+  def fproduct[F[_]: Functor, A, B](fa: F[A])(f: A => B): F[(A, B)] = Functor[F].fproduct(fa)(f)
   def pair[F[_]: Functor, A](fa: F[A]): F[(A, A)] = Functor[F].pair(fa)
   def strengthL[F[_]: Functor, A, B](a: A, fb: F[B]): F[(A, B)] = Functor[F].strengthL(a, fb)
   def strengthR[F[_]: Functor, A, B](fa: F[A], b: B): F[(A, B)] = Functor[F].strengthR(fa, b)
@@ -61,11 +61,13 @@ trait FunctorFunctions {
 trait FunctorSyntax {
   implicit class FunctorOps[F[_]: Functor, A](self: F[A]) {
     def map[B](f: A => B): F[B] = Functor[F].map(self)(f)
+    def fmap[B](f: A => B): F[B] = Functor[F].fmap(f, self)
     def replaceL[B](b: B): F[B] = Functor[F].replaceL(b, self)
     def replaceR[B](b: B): F[B] = Functor[F].replaceR(self, b)
     def as[B](b: B): F[B] = Functor[F].replaceR(self, b)
     def void: F[Unit] = Functor[F].void(self)
-    def product[B](f: A => B): F[(A, B)] = Functor[F].product(self)(f)
+    def fcompose[B, C](f: A => B, g: B => C): F[C] = Functor[F].fcompose(self)(f, g)
+    def fproduct[B](f: A => B): F[(A, B)] = Functor[F].fproduct(self)(f)
     def pair: F[(A, A)] = Functor[F].pair(self)
     def strengthL[B](b: B): F[(B, A)] = Functor[F].strengthL(b, self)
     def strengthR[B](b: B): F[(A, B)] = Functor[F].strengthR(self, b)

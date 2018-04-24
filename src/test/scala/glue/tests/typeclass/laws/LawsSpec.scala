@@ -10,6 +10,8 @@ class LawsSpec extends GlueSpec {
   checkAll("Monoid[List[String]]", MonoidLawsSpec[List[String]].props)
   checkAll("Monoid[Option[Int]]", MonoidLawsSpec[Option[Int]].props)
   checkAll("Monoid[Option[String]]", MonoidLawsSpec[Option[String]].props)
+  checkAll("Monoid[Option[Int => Int]]", MonoidLawsSpec[Option[Int => Int]].props)
+  checkAll("Monoid[Option[String => String]]", MonoidLawsSpec[Option[String => String]].props)
 
   import glue.Id
   checkAll("Id[Int]", FunctorLawsSpec[Id].props[Int, Int, Int])
