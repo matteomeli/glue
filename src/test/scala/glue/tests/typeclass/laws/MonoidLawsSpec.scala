@@ -3,7 +3,8 @@ package glue.tests.typeclass.laws
 import glue.Monoid
 import glue.typeclass.MonoidLaws
 
-import org.scalacheck._
+import org.scalacheck.{Arbitrary, Prop, Properties}
+import Prop._
 
 trait MonoidLawsSpec[A] {
   def laws: MonoidLaws[A]
