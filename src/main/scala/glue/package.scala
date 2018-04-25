@@ -1,7 +1,7 @@
 import scala.language.higherKinds
 
 package object glue {
-  type Id[A] = A
+  type Id[A] = typeclass.Identity.Id[A]
 
   type Foldable[F[_]] = typeclass.Foldable[F]
   type Functor[F[_]] = typeclass.Functor[F]

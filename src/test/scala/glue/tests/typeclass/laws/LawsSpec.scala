@@ -2,6 +2,7 @@ package glue.tests.typeclass.laws
 
 import glue.tests.GlueSpec
 
+import glue._
 import glue.prelude._
 
 class LawsSpec extends GlueSpec {
@@ -13,7 +14,6 @@ class LawsSpec extends GlueSpec {
   checkAll("Monoid[Option[Int => Int]]", MonoidLawsSpec[Option[Int => Int]].props)
   checkAll("Monoid[Option[String => String]]", MonoidLawsSpec[Option[String => String]].props)
 
-  import glue.Id
   checkAll("Id[Int]", FunctorLawsSpec[Id].props[Int, Int, Int])
   checkAll("Id[String]", FunctorLawsSpec[Id].props[String, String, String])
   checkAll("List[Int]", FunctorLawsSpec[List].props[Int, Int, Int])

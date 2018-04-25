@@ -75,7 +75,7 @@ trait FunctorSyntax {
 }
 
 trait FunctorInstances {
-  import glue.Id
+  import Identity.Id
 
   implicit val idIsFunctor: Functor[Id] = new Functor[Id] {
     def map[A, B](id: Id[A])(f: A => B): Id[B] = f(id)
