@@ -3,9 +3,9 @@ package glue.tests.typeclass
 import glue.Functor
 import glue.Functor._
 import glue.Functor.syntax._
-import glue.Functor.instances._
 
 import glue.std.option._
+import glue.std.list._
 
 import org.scalatest.{Matchers, WordSpec}
 

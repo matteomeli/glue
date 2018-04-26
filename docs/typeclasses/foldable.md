@@ -27,7 +27,7 @@ implicit val listIsFoldable: Foldable[List] = new Foldable[List] {
 
 ```scala
 import glue._
-import glue.prelude._
+import glue.all._
 
 implicit val optionIsFoldable: Foldable[Option] = new Foldable[Option] {
   def foldLeft[A, B](oa: Option[A])(z: B)(f: (B, A) => B): B = oa.map(f(z, _)).getOrElse(z)

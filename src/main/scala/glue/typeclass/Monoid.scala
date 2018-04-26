@@ -27,21 +27,6 @@ trait MonoidSyntax {
 }
 
 trait MonoidInstances {
-  implicit val stringIsMonoid: Monoid[String] = new Monoid[String] {
-    val unit: String = ""
-    def combine(a1: String, a2: String): String = a1 + a2
-  }
-
-  implicit def listIsMonoid[A]: Monoid[List[A]] = new Monoid[List[A]] {
-    val unit: List[A] = List.empty
-    def combine(l: List[A], r: List[A]): List[A] = l ++ r
-  }
-
-  implicit def optionIsMonoid[A]: Monoid[Option[A]] = new Monoid[Option[A]] {
-    val unit: Option[A] = None
-    def combine(a1: Option[A], a2: Option[A]): Option[A] = a1 orElse a2
-  }
-
   implicit def endoMonoid[A]: Monoid[A => A] = new Monoid[A => A] {
     val unit: A => A = identity[A]
     def combine(a1: A => A, a2: A => A): A => A = a1 compose a2

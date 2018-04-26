@@ -10,7 +10,6 @@ trait MonoidLawsSpec[A] {
   def laws: MonoidLaws[A]
 
   def props(implicit arbA: Arbitrary[A]): Properties = new Properties("monoid") {
-    import Prop.forAll
     property("leftIdentity") = forAll(laws.leftIdentity _)
     property("rightIdentity") = forAll(laws.rightIdentity _)
     property("associativity") = forAll(laws.associativity _)

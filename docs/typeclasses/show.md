@@ -14,7 +14,7 @@ implicit val intCanShow: Show[Int] = int => s"int $int"
 
 ```scala
 import glue._
-import glue.prelude._
+import glue.all._
 
 val i: Int = 0;
 i.show  // "int 0"

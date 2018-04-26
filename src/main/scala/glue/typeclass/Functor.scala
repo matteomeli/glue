@@ -37,8 +37,6 @@ object Functor extends FunctorFunctions {
   def apply[F[_]](implicit F: Functor[F]): Functor[F] = F
 
   object syntax extends FunctorSyntax
-
-  object instances extends FunctorInstances
 }
 
 trait FunctorFunctions {
@@ -72,27 +70,6 @@ trait FunctorSyntax {
     def strengthL[B](b: B): F[(B, A)] = Functor[F].strengthL(b, self)
     def strengthR[B](b: B): F[(A, B)] = Functor[F].strengthR(self, b)
   }
-}
-
-trait FunctorInstances {
-  import Identity.Id
-
-  implicit val idIsFunctor: Functor[Id] = new Functor[Id] {
-    def map[A, B](id: Id[A])(f: A => B): Id[B] = f(id)
-  }
-
-  implicit val listIsFunctor: Functor[List] = new Functor[List] {
-    def map[A, B](as: List[A])(f: A => B): List[B] = as map f
-  }
-
-  implicit val optionIsFunctor: Functor[Option] = new Functor[Option] {
-    def map[A, B](o: Option[A])(f: A => B): Option[B] = o map f
-  }
-
-  implicit def eitherIsFunctor[L]: Functor[({type λ[α] = Either[L, α]})#λ] =
-    new Functor[({type λ[α] = Either[L, α]})#λ] {
-      def map[A, B](e: Either[L, A])(f: A => B): Either[L, B] = e map f
-    }
 }
 
 trait FunctorLaws[F[_]] {

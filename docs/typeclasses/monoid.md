@@ -22,7 +22,7 @@ implicit val intAdditionIsMonoid: Monoid[Int] = new Monoid[Int] {
 
 ```scala
 import glue._
-import glue.prelude._
+import glue.all._
 
 val s1: String = "Hello, "
 val s2: String = "world!"

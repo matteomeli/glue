@@ -13,7 +13,6 @@ trait FunctorLawsSpec[F[_]] {
     implicit arbFA: Arbitrary[F[A]],
     cogenA: Cogen[A],
     cogenB: Cogen[B]): Properties = new Properties("functor") {
-    import Prop.forAll
     property("identity") = forAll(laws.identity[A] _)
     property("composition") = forAll(laws.composition[A, B, C] _)
   }

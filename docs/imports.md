@@ -4,7 +4,7 @@ The simplest approach is to import everything:
 
 ```scala
 import glue._
-import glue.prelude._
+import glue.all._
 ```
 
 The `glue._` import brings in all the available *type classes*, such as [Monoid](./typeclasses/Monoid.md). Instead of the all `glue` package, you can import only the type classes you need as well:
@@ -14,7 +14,7 @@ import glue.Monoid
 import glue.Foldable
 ```
 
-The `glue.prelude._` import does two things. Firstly, it brings in scope implicit type class instances - like `Monoid[String]`. Secondly, it adds additional syntax enhancement for those type classes using ad-hoc polymorphism:
+The `glue.all._` import does two things. Firstly, it brings in scope implicit type class instances - like `Monoid[String]`. Secondly, it adds additional syntax enhancement for those type classes using ad-hoc polymorphism:
 
 ```scala
 // glue adds a show function to standard library type Int

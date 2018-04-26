@@ -3,7 +3,7 @@ package glue.tests.typeclass.laws
 import glue.tests.GlueSpec
 
 import glue._
-import glue.prelude._
+import glue.all._
 
 class LawsSpec extends GlueSpec {
   checkAll("Monoid[String]", MonoidLawsSpec[String].props)
