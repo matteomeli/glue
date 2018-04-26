@@ -1,13 +1,32 @@
 package glue.typeclass
 
-trait Monoid[A] {
+trait Monoid[A] { self =>
   val unit: A
   def combine(a1: A, a2: A): A
   def combineAll(as: TraversableOnce[A]): A = as.foldLeft(unit)(combine)
+
+  // The product of two monoids on types A and B is a monoid of type (A, B)
+  def product[B](implicit M: Monoid[B]): Monoid[(A, B)] = new Monoid[(A, B)] {
+    val unit: (A, B) = (self.unit, M.unit)
+    def combine(x: (A, B), y: (A, B)): (A, B) = (self.combine(x._1, y._1), M.combine(x._2, y._2))
+  }
 }
 
 object Monoid extends MonoidFunctions {
   def apply[A](implicit M: Monoid[A]): Monoid[A] = M
+
+  def mapMerge[K, V](implicit V: Monoid[V]): Monoid[Map[K, V]] = new Monoid[Map[K, V]] {
+    val unit: Map[K, V] = Map[K, V]()
+    def combine(m1: Map[K, V], m2: Map[K, V]): Map[K, V] =
+      (m1.keySet ++ m2.keySet).foldLeft(unit) { (acc, k) =>
+        acc.updated(k, V.combine(m1.getOrElse(k, V.unit), m2.getOrElse(k, V.unit)))
+      }
+  }
+
+  def functionMerge[A, B](implicit B: Monoid[B]): Monoid[A => B] = new Monoid[A => B] {
+    val unit: A => B = _ => B.unit
+    def combine(f: A => B, g: A => B): A => B = a => B.combine(f(a), g(a))
+  }
 
   object syntax extends MonoidSyntax
 
