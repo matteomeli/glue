@@ -2,13 +2,13 @@ package glue.std
 
 import glue.typeclass.{Foldable, Functor, Monoid}
 
-object stream extends StreamFunctions with StreamSyntax with StreamInstances
+object stream extends StreamFunctions with StreamSyntax with StreamImplicits
 
 trait StreamFunctions {}
 
 trait StreamSyntax {}
 
-trait StreamInstances {
+trait StreamImplicits {
   implicit val streamIsFoldable: Foldable[Stream] = new Foldable[Stream] {
     def foldLeft[A, B](as: Stream[A])(z: B)(f: (B, A) => B): B =
       as.foldLeft(z)(f)

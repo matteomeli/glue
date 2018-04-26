@@ -2,9 +2,9 @@ package glue.std
 
 import glue.typeclass.Show
 
-object anyval extends AnyValInstances
+object anyval extends AnyValImplicits
 
-trait AnyValInstances {
+trait AnyValImplicits {
   implicit val unitCanShow: Show[Unit] = Unit => "unit"
   implicit val boolCanShow: Show[Boolean] = bool => s"bool $bool"
   implicit val byteCanShow: Show[Byte] = byte => s"byte $byte"

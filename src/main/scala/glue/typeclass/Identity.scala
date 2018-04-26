@@ -6,7 +6,7 @@ object Identity {
   type Id[A] = A
 }
 
-trait IdInstances {
+trait IdImplicits {
   import Identity._
 
   implicit val idIsFunctor: Functor[Id] = new Functor[Id] {

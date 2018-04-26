@@ -14,18 +14,18 @@ trait AllSyntax
   with StreamSyntax
   with StringSyntax
 
-trait AllInstances
-  extends AnyValInstances
-  with EitherInstances
-  with ListInstances
-  with OptionInstances
-  with StreamInstances
-  with StringInstances
+trait AllImplicits
+  extends AnyValImplicits
+  with EitherImplicits
+  with ListImplicits
+  with OptionImplicits
+  with StreamImplicits
+  with StringImplicits
 
 object functions extends AllFunctions
 
 object syntax extends AllSyntax
 
-object instances extends AllInstances
+object implicits extends AllImplicits
 
-object all extends AllFunctions with AllSyntax with AllInstances
+object all extends AllFunctions with AllSyntax with AllImplicits

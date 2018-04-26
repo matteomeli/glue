@@ -2,7 +2,7 @@ package glue.std
 
 import glue.typeclass.{Foldable, Functor, Monoid}
 
-object option extends OptionFunctions with OptionSyntax with OptionInstances
+object option extends OptionFunctions with OptionSyntax with OptionImplicits
 
 trait OptionFunctions {
   final def some[A](a: A): Option[A] = Some(a)
@@ -11,7 +11,7 @@ trait OptionFunctions {
 
 trait OptionSyntax {}
 
-trait OptionInstances {
+trait OptionImplicits {
   implicit def optionIsMonoid[A]: Monoid[Option[A]] = new Monoid[Option[A]] {
     val unit: Option[A] = None
     def combine(a1: Option[A], a2: Option[A]): Option[A] = a1 orElse a2

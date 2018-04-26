@@ -11,7 +11,7 @@ object Monoid extends MonoidFunctions {
 
   object syntax extends MonoidSyntax
 
-  object instances extends MonoidInstances
+  object implicits extends MonoidImplicits
 }
 
 trait MonoidFunctions {
@@ -26,7 +26,7 @@ trait MonoidSyntax {
   }
 }
 
-trait MonoidInstances {
+trait MonoidImplicits {
   implicit def endoMonoid[A]: Monoid[A => A] = new Monoid[A => A] {
     val unit: A => A = identity[A]
     def combine(a1: A => A, a2: A => A): A => A = a1 compose a2

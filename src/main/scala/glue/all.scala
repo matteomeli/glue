@@ -16,15 +16,15 @@ trait AllSyntax
   with MonoidSyntax
   with ShowSyntax
 
-trait AllInstances
-  extends IdInstances
-  with MonoidInstances
+trait AllImplicits
+  extends IdImplicits
+  with MonoidImplicits
 
 object functions extends AllFunctions
 
 object syntax extends AllSyntax
 
-object instances extends AllInstances
+object implicits extends AllImplicits
 
-object all extends AllFunctions with AllSyntax with AllInstances
-  with std.AllFunctions with std.AllSyntax with std.AllInstances
+object all extends AllFunctions with AllSyntax with AllImplicits
+  with std.AllFunctions with std.AllSyntax with std.AllImplicits

@@ -2,7 +2,7 @@ package glue.std
 
 import glue.typeclass.{Foldable, Monoid}
 
-object indexedSeq extends IndexedSeqFunctions with IndexedSeqSyntax with IndexedSeqInstances
+object indexedSeq extends IndexedSeqFunctions with IndexedSeqSyntax with IndexedSeqImplicits
 
 trait IndexedSeqFunctions {
   def foldMapB[A, B](as: IndexedSeq[A])(f: A => B)(mb: Monoid[B]): B =
@@ -20,7 +20,7 @@ trait IndexedSeqSyntax {
   }
 }
 
-trait IndexedSeqInstances {
+trait IndexedSeqImplicits {
   implicit val indexedSeqIsFoldable: Foldable[IndexedSeq] = new Foldable[IndexedSeq] {
     def foldLeft[A, B](as: IndexedSeq[A])(z: B)(f: (B, A) => B): B =
       as.foldLeft(z)(f)

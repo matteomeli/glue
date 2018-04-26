@@ -2,7 +2,7 @@ package glue.std
 
 import glue.typeclass.{Foldable, Functor, Monoid}
 
-object list extends ListFunctions with ListSyntax with ListInstances
+object list extends ListFunctions with ListSyntax with ListImplicits
 
 trait ListFunctions {
   def empty[A]: List[A] = Nil
@@ -10,7 +10,7 @@ trait ListFunctions {
 
 trait ListSyntax {}
 
-trait ListInstances {
+trait ListImplicits {
   implicit def listIsMonoid[A]: Monoid[List[A]] = new Monoid[List[A]] {
     val unit: List[A] = List.empty
     def combine(l: List[A], r: List[A]): List[A] = l ++ r
