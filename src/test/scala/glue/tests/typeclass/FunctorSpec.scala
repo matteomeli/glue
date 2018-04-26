@@ -77,12 +77,12 @@ class FunctorSpec extends WordSpec with Matchers {
       lenOption(some("abcd")) shouldBe Some(4)
     }
 
-    "composeF" in {
+    "compose" in {
       val listOption = Functor[List] compose Functor[Option]
       listOption.map(List(Some(1), None, Some(3)))(_ + 1) shouldBe List(Some(2), None, Some(4))
     }
 
-    "productF" in {
+    "product" in {
       val optionPair = Functor[Option] product Functor[Option]
       optionPair.map((Some("aaa"), Some("bb")))(len) shouldBe ((Some(3), Some(2)))
     }
