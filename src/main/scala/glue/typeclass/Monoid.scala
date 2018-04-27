@@ -6,14 +6,14 @@ trait Monoid[A] { self =>
   def combineAll(as: TraversableOnce[A]): A = as.foldLeft(unit)(combine)
 
   // The product of two monoids on types A and B is a monoid of type (A, B)
-  def product[B](implicit M: Monoid[B]): Monoid[(A, B)] = new Monoid[(A, B)] {
-    val unit: (A, B) = (self.unit, M.unit)
-    def combine(x: (A, B), y: (A, B)): (A, B) = (self.combine(x._1, y._1), M.combine(x._2, y._2))
+  def product[B](implicit monoidB: Monoid[B]): Monoid[(A, B)] = new Monoid[(A, B)] {
+    val unit: (A, B) = (self.unit, monoidB.unit)
+    def combine(x: (A, B), y: (A, B)): (A, B) = (self.combine(x._1, y._1), monoidB.combine(x._2, y._2))
   }
 }
 
 object Monoid extends MonoidFunctions {
-  def apply[A](implicit M: Monoid[A]): Monoid[A] = M
+  def apply[A](implicit monoid: Monoid[A]): Monoid[A] = monoid
 
   def mapMerge[K, V](implicit V: Monoid[V]): Monoid[Map[K, V]] = new Monoid[Map[K, V]] {
     val unit: Map[K, V] = Map[K, V]()
@@ -53,15 +53,15 @@ trait MonoidImplicits {
 }
 
 trait MonoidLaws[A] {
-  implicit def M: Monoid[A]
+  implicit def monoid: Monoid[A]
 
-  def leftIdentity(a: A): Boolean = M.combine(M.unit, a) == a
-  def rightIdentity(a: A): Boolean = M.combine(a, M.unit) == a
+  def leftIdentity(a: A): Boolean = monoid.combine(monoid.unit, a) == a
+  def rightIdentity(a: A): Boolean = monoid.combine(a, monoid.unit) == a
   def associativity(a1: A, a2: A, a3: A): Boolean =
-    M.combine(a1, M.combine(a2, a3)) == M.combine(M.combine(a1, a2), a3)
+    monoid.combine(a1, monoid.combine(a2, a3)) == monoid.combine(monoid.combine(a1, a2), a3)
 }
 
 object MonoidLaws {
   def apply[A](implicit ev: Monoid[A]): MonoidLaws[A] =
-    new MonoidLaws[A] { def M: Monoid[A] = ev }
+    new MonoidLaws[A] { def monoid: Monoid[A] = ev }
 }

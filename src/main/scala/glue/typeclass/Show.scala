@@ -7,7 +7,7 @@ trait Show[A] {
 }
 
 object Show extends ShowFunctions {
-  def apply[A](implicit S: Show[A]): Show[A] = S
+  def apply[A](implicit show: Show[A]): Show[A] = show
 
   def show[A](f: A => String): Show[A] = new Show[A] {
     def show(a: A): String = f(a)
