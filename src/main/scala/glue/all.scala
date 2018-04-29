@@ -3,14 +3,16 @@ package glue
 import typeclass._
 
 trait AllFunctions
-  extends EqFunctions
+  extends ApplicativeFunctions
+  with EqFunctions
   with FoldableFunctions
   with FunctorFunctions
   with MonoidFunctions
   with ShowFunctions
 
 trait AllSyntax
-  extends EqSyntax
+  extends ApplicativeSyntax
+  with EqSyntax
   with FoldableSyntax
   with FunctorSyntax
   with MonoidSyntax

@@ -1,6 +1,6 @@
 package glue.std
 
-import glue.typeclass.{Foldable, Functor, Monoid}
+import glue.typeclass.{Applicative, Foldable, Functor, Monoid}
 
 object option extends OptionFunctions with OptionSyntax with OptionImplicits
 
@@ -26,5 +26,11 @@ trait OptionImplicits {
 
   implicit val optionIsFunctor: Functor[Option] = new Functor[Option] {
     def map[A, B](o: Option[A])(f: A => B): Option[B] = o map f
+  }
+
+  implicit val optionIsApplicative: Applicative[Option] = new Applicative[Option] {
+    val functor: Functor[Option] = Functor[Option]
+    def unit[A](a: => A): Option[A] = Some(a)
+    def apply[A, B](f: Option[A => B])(o: Option[A]): Option[B] = o flatMap { a => f.map(_(a)) }
   }
 }

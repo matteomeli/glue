@@ -1,6 +1,6 @@
 package glue.std
 
-import glue.typeclass.{Foldable, Functor, Monoid}
+import glue.typeclass.{Applicative, Foldable, Functor, Monoid}
 
 object stream extends StreamFunctions with StreamSyntax with StreamImplicits
 
@@ -20,5 +20,12 @@ trait StreamImplicits {
 
   implicit val streamIsFunctor: Functor[Stream] = new Functor[Stream] {
     def map[A, B](as: Stream[A])(f: A => B): Stream[B] = as map f
+  }
+
+  implicit val streamIsApplicative: Applicative[Stream] = new Applicative[Stream] {
+    val functor: Functor[Stream] = Functor[Stream]
+    def unit[A](a: => A): Stream[A] = Stream.continually(a)
+    def apply[A, B](fs: Stream[A => B])(as: Stream[A]): Stream[B] =
+      as zip fs map { case (a, f) => f(a) }
   }
 }
