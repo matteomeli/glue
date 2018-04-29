@@ -4,9 +4,17 @@ case class Identity[A](run: A) extends AnyVal
 
 object Identity {
   type Id[A] = A
+
+  object syntax extends IdentitySyntax
 }
 
-trait IdImplicits {
+trait IdentitySyntax {
+  implicit class IdOps[A](a: A) {
+    def unused(): Unit = ()
+  }
+}
+
+trait IdentityImplicits {
   import Identity._
 
   implicit val idIsFunctor: Functor[Id] = new Functor[Id] {

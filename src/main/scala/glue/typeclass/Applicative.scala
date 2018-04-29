@@ -68,8 +68,22 @@ trait ApplicativeFunctions {
 }
 
 trait ApplicativeSyntax {
+  import Identity.syntax._
+
   implicit class ApplicativeOps[F[_]: Applicative, A](self: F[A]) {
     def apply[B](f: F[A => B]): F[B] = Applicative[F].apply(f)(self)
+
+    // Allow the apply to be injected as well when A is of type Function1[B, C]
+    def apply[B, C](fb: F[B])(implicit ev: A <:< B => C): F[C] = {
+      // This function uses generalized type constraints as implicit evidence parameters
+      // If -Ywarn-unused:implicitshe is passed to the compiler,
+      // it will issue a warning about ev being unused.
+      // If -Xfatal-warnings is used, compilation will fail.
+      // The following line allows compilation under those two flags.
+      ev.unused
+      Applicative[F].apply(self.asInstanceOf[F[B => C]])(fb)
+    }
+
     def map[B](f: A => B): F[B] = Applicative[F].map(self)(f)
 
     def map2[B, C](fb: F[B])(f: (A, B) => C): F[C] = Applicative[F].map2(self, fb)(f)
@@ -82,7 +96,8 @@ trait ApplicativeSyntax {
   }
 }
 
-trait ApplicativeLaws[F[_]] {
+trait ApplicativeLaws[F[_]] extends FunctorLaws[F] {
+  implicit def functor: Functor[F] = Functor[F]
   implicit def applicative: Applicative[F]
 
   import Applicative._
@@ -90,12 +105,16 @@ trait ApplicativeLaws[F[_]] {
 
   def leftIdentity[A](fa: F[A]): Boolean = map2(unit(()), fa)((_, a) => a) == fa
   def rightIdentity[A](fa: F[A]): Boolean = map2(fa, unit(()))((a, _) => a) == fa
+  def associativity[A, B, C](fa: F[A], fb: F[B], fc: F[C]): Boolean = {
+    def reassoc(p: (A, (B, C))): ((A, B), C) = p match { case (a, (b, c)) => ((a, b), c)}
+    fproduct(fproduct(fa, fb), fc) == map(fproduct(fa, fproduct(fb, fc)))(reassoc)
+  }
   def homomorphism[A, B](a: A, f: A => B): Boolean = unit(a).apply(unit(f)) == unit(f(a))
-  def interchange[A, B](a: A, f: F[A => B]): Boolean =
-    apply(f)(unit(a)) == apply(unit((f: A => B) => f(a)))(f)
+  def interchange[A, B](a: A, ff: F[A => B]): Boolean =
+    apply(ff)(unit(a)) == apply(unit((f: A => B) => f(a)))(ff)
   def composition[A, B, C](fa: F[A], fab: F[A => B], fbc: F[B => C]): Boolean = {
     val compose: (A => B) => (B => C) => (A => C) = _.andThen
-    apply(apply(apply(unit(compose))(fab))(fbc))(fa) == apply(fbc)(fa.apply(fab))
+    unit(compose).apply(fab).apply(fbc).apply(fa) == fbc.apply(fab.apply(fa))
   }
   def applicativeMap[A, B](fa: F[A], f: A => B): Boolean =
     fa.map(f) == fa.apply(unit(f))

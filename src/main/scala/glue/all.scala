@@ -11,7 +11,8 @@ trait AllFunctions
   with ShowFunctions
 
 trait AllSyntax
-  extends ApplicativeSyntax
+  extends IdentitySyntax
+  with ApplicativeSyntax
   with EqSyntax
   with FoldableSyntax
   with FunctorSyntax
@@ -19,7 +20,7 @@ trait AllSyntax
   with ShowSyntax
 
 trait AllImplicits
-  extends IdImplicits
+  extends IdentityImplicits
   with MonoidImplicits
 
 object functions extends AllFunctions
