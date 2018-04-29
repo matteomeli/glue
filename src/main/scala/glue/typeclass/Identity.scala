@@ -20,4 +20,10 @@ trait IdentityImplicits {
   implicit val idIsFunctor: Functor[Id] = new Functor[Id] {
     def map[A, B](id: Id[A])(f: A => B): Id[B] = f(id)
   }
+
+  implicit val idIsApplicative: Applicative[Id] = new Applicative[Id] {
+    val functor: Functor[Id] = Functor[Id]
+    def unit[A](a: => A): Id[A] = a
+    def apply[A, B](f: Id[A => B])(fa: Id[A]): Id[B] = f(fa)
+  }
 }
