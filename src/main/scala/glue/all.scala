@@ -55,4 +55,6 @@ object syntax extends AllSyntax
 
 object implicits extends Hierarchy with AllImplicits
 
+object prelude extends Hierarchy with AllData with AllFunctions
+
 object all extends Hierarchy with AllFunctions with AllSyntax with AllImplicits
