@@ -9,7 +9,7 @@ import Prop._
 trait EqLawsSpec[A] {
   def laws: EqLaws[A]
 
-  def props(implicit arbA: Arbitrary[A]): Properties = new Properties("eq") {
+  def eq(implicit arbA: Arbitrary[A]): Properties = new Properties("eq") {
     property("simmetry") = forAll(laws.simmetry _)
     property("reflexivity") = forAll(laws.reflexivity _)
     property("transitivity") = forAll(laws.transitivity _)

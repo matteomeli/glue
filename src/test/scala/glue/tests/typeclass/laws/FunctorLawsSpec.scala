@@ -9,7 +9,7 @@ import Prop._
 trait FunctorLawsSpec[F[_]] {
   def laws: FunctorLaws[F]
 
-  def props[A: Arbitrary, B: Arbitrary, C: Arbitrary](
+  def functor[A: Arbitrary, B: Arbitrary, C: Arbitrary](
     implicit arbFA: Arbitrary[F[A]],
     cogenA: Cogen[A],
     cogenB: Cogen[B]): Properties = new Properties("functor") {

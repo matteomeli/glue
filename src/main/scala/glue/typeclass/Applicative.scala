@@ -68,7 +68,7 @@ trait ApplicativeFunctions {
 }
 
 trait ApplicativeSyntax {
-  import Identity.syntax._
+  import glue.data.Identity.syntax._
 
   implicit class ApplicativeOps[F[_]: Applicative, A](self: F[A]) {
     def apply[B](f: F[A => B]): F[B] = Applicative[F].apply(f)(self)
@@ -96,8 +96,7 @@ trait ApplicativeSyntax {
   }
 }
 
-trait ApplicativeLaws[F[_]] extends FunctorLaws[F] {
-  implicit def functor: Functor[F] = Functor[F]
+trait ApplicativeLaws[F[_]] {
   implicit def applicative: Applicative[F]
 
   import Applicative._

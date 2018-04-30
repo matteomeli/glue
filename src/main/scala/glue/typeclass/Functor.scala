@@ -15,8 +15,8 @@ trait Functor[F[_]] { self =>
     case Left(fa) => map(fa)(Left(_))
     case Right(fb) => map(fb)(Right(_))
   }
-  def fproduct[A, B](fa: F[A])(f: A => B): F[(A, B)] = map(fa) { a => (a, f(a)) }
   def pair[A](fa: F[A]): F[(A, A)] = map(fa) { a => (a, a) }
+  def fpair[A, B](fa: F[A])(f: A => B): F[(A, B)] = map(fa) { a => (a, f(a)) }
   def strengthL[A, B](a: A, fb: F[B]): F[(A, B)] = map(fb) { b => (a, b) }
   def strengthR[A, B](fa: F[A], b: B): F[(A, B)] = map(fa) { a => (a, b) }
 
@@ -50,8 +50,8 @@ trait FunctorFunctions {
   def fcompose[F[_]: Functor, A, B, C](fa: F[A])(f: A => B, g: B => C): F[C] = Functor[F].fcompose(fa)(f, g)
   def distribute[F[_]: Functor, A, B](fab: F[(A, B)]): (F[A], F[B]) = Functor[F].distribute(fab)
   def codistribute[F[_]: Functor, A, B](e: Either[F[A], F[B]]): F[Either[A, B]] = Functor[F].codistribute(e)
-  def fproduct[F[_]: Functor, A, B](fa: F[A])(f: A => B): F[(A, B)] = Functor[F].fproduct(fa)(f)
   def pair[F[_]: Functor, A](fa: F[A]): F[(A, A)] = Functor[F].pair(fa)
+  def fpair[F[_]: Functor, A, B](fa: F[A])(f: A => B): F[(A, B)] = Functor[F].fpair(fa)(f)
   def strengthL[F[_]: Functor, A, B](a: A, fb: F[B]): F[(A, B)] = Functor[F].strengthL(a, fb)
   def strengthR[F[_]: Functor, A, B](fa: F[A], b: B): F[(A, B)] = Functor[F].strengthR(fa, b)
 }
@@ -65,8 +65,8 @@ trait FunctorSyntax {
     def as[B](b: B): F[B] = Functor[F].replaceR(self, b)
     def void: F[Unit] = Functor[F].void(self)
     def fcompose[B, C](f: A => B, g: B => C): F[C] = Functor[F].fcompose(self)(f, g)
-    def fproduct[B](f: A => B): F[(A, B)] = Functor[F].fproduct(self)(f)
     def pair: F[(A, A)] = Functor[F].pair(self)
+    def fpair[B](f: A => B): F[(A, B)] = Functor[F].fpair(self)(f)
     def strengthL[B](b: B): F[(B, A)] = Functor[F].strengthL(b, self)
     def strengthR[B](b: B): F[(A, B)] = Functor[F].strengthR(self, b)
   }

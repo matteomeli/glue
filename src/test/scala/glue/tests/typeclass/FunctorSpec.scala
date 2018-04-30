@@ -1,11 +1,7 @@
 package glue.tests.typeclass
 
-import glue.Functor
-import glue.Functor._
-import glue.Functor.syntax._
-
-import glue.std.option._
-import glue.std.list._
+import glue._
+import glue.all._
 
 import org.scalatest.{Matchers, WordSpec}
 
@@ -56,12 +52,13 @@ class FunctorSpec extends WordSpec with Matchers {
       List("aaa", "bb", "c").fcompose(len, identity[Int]) shouldBe List(3, 2, 1)
     }
 
-    "fproduct" in {
-      List("aaa", "bb", "c").fproduct(len).toMap shouldBe Map("aaa" -> 3, "bb" -> 2, "c" -> 1)
-    }
-
     "pair" in {
       some(1).pair shouldBe some((1, 1))
+    }
+
+    "fpair" in {
+      some(2).fpair(double) shouldBe some((2, 4))
+      List("aaa", "bb", "c").fpair(len).toMap shouldBe Map("aaa" -> 3, "bb" -> 2, "c" -> 1)
     }
 
     "strengthL" in {

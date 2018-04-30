@@ -18,12 +18,10 @@ trait StreamImplicits {
       as.foldLeft(M.unit)((b, a) => M.combine(b, f(a)))
   }
 
-  implicit val streamIsFunctor: Functor[Stream] = new Functor[Stream] {
-    def map[A, B](as: Stream[A])(f: A => B): Stream[B] = as map f
-  }
-
   implicit val streamIsApplicative: Applicative[Stream] = new Applicative[Stream] {
-    val functor: Functor[Stream] = Functor[Stream]
+    val functor: Functor[Stream] = new Functor[Stream] {
+      def map[A, B](as: Stream[A])(f: A => B): Stream[B] = as map f
+    }
     def unit[A](a: => A): Stream[A] = Stream.continually(a)
     def apply[A, B](fs: Stream[A => B])(as: Stream[A]): Stream[B] =
       as zip fs map { case (a, f) => f(a) }

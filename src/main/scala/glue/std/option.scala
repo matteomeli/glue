@@ -24,12 +24,10 @@ trait OptionImplicits {
       oa.map(a => M.combine(f(a), M.unit)).getOrElse(M.unit)
   }
 
-  implicit val optionIsFunctor: Functor[Option] = new Functor[Option] {
-    def map[A, B](o: Option[A])(f: A => B): Option[B] = o map f
-  }
-
   implicit val optionIsApplicative: Applicative[Option] = new Applicative[Option] {
-    val functor: Functor[Option] = Functor[Option]
+    val functor: Functor[Option] = new Functor[Option] {
+      def map[A, B](o: Option[A])(f: A => B): Option[B] = o map f
+    }
     def unit[A](a: => A): Option[A] = Some(a)
     def apply[A, B](f: Option[A => B])(o: Option[A]): Option[B] = o flatMap { a => f.map(_(a)) }
   }
