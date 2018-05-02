@@ -20,15 +20,15 @@ trait Functor[F[_]] { self =>
   def strengthL[A, B](a: A, fb: F[B]): F[(A, B)] = map(fb) { b => (a, b) }
   def strengthR[A, B](fa: F[A], b: B): F[(A, B)] = map(fa) { a => (a, b) }
 
-  // The composition of two functors F anf G is a functor of type F[G[α]] for any type α.
-  def compose[G[_]](implicit functorG: Functor[G]): Functor[({type λ[α] = F[G[α]]})#λ] =
-    new Functor[({type λ[α] = F[G[α]]})#λ] {
+  // The composition of two functors F anf G is a functor of type F[G[x]] for any type x.
+  def compose[G[_]](implicit functorG: Functor[G]): Functor[({type f[x] = F[G[x]]})#f] =
+    new Functor[({type f[x] = F[G[x]]})#f] {
       def map[A, B](fga: F[G[A]])(f: A => B): F[G[B]] = self.map(fga)(functorG.lift(f))
     }
 
-  // The product of two functors F anf G is a functor of type (F[α], G[α]) for any type α.
-  def product[G[_]](implicit functorG: Functor[G]): Functor[({type λ[α] = (F[α], G[α])})#λ] =
-    new Functor[({type λ[α] = (F[α], G[α])})#λ] {
+  // The product of two functors F anf G is a functor of type (F[x], G[x]) for any type x.
+  def product[G[_]](implicit functorG: Functor[G]): Functor[({type f[x] = (F[x], G[x])})#f] =
+    new Functor[({type f[x] = (F[x], G[x])})#f] {
       def map[A, B](fa: (F[A], G[A]))(f: A => B): (F[B], G[B]) = (self.map(fa._1)(f), functorG.map(fa._2)(f))
     }
 }

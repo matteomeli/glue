@@ -24,19 +24,19 @@ trait Applicative[F[_]] { self =>
   def replicateM[A](n: Int, fa: F[A]): F[List[A]] =
     (List.fill(n)(fa)).foldRight(unit(List[A]()))((fa, l) => map2(fa, l)(_ :: _))
 
-  // The composition of two applicative functors F anf G is a functor of type F[G[α]] for any type α.
-  def compose[G[_]](implicit applicativeG: Applicative[G]): Applicative[({type λ[α] = F[G[α]]})#λ] =
-    new Applicative[({type λ[α] = F[G[α]]})#λ] {
-      val functor: Functor[({type λ[α] = F[G[α]]})#λ] = self.functor compose applicativeG.functor
+  // The composition of two applicative functors F anf G is a functor of type F[G[x]] for any type x.
+  def compose[G[_]](implicit applicativeG: Applicative[G]): Applicative[({type f[x] = F[G[x]]})#f] =
+    new Applicative[({type f[x] = F[G[x]]})#f] {
+      val functor: Functor[({type f[x] = F[G[x]]})#f] = self.functor compose applicativeG.functor
       def unit[A](a: => A): F[G[A]] = self.unit(applicativeG.unit(a))
       def apply[A, B](fgf: F[G[A => B]])(fga: F[G[A]]): F[G[B]] =
         self.map2(fgf, fga) { case (gf, ga) => applicativeG.apply(gf)(ga) }
     }
 
-  // The product of two applicative functors F anf G is a functor of type (F[α], G[α]) for any type α.
-  def product[G[_]](implicit applicativeG: Applicative[G]): Applicative[({type λ[α] = (F[α], G[α])})#λ] =
-    new Applicative[({type λ[α] = (F[α], G[α])})#λ] {
-      val functor: Functor[({type λ[α] = (F[α], G[α])})#λ] = self.functor product applicativeG.functor
+  // The product of two applicative functors F anf G is a functor of type (F[x], G[x]) for any type x.
+  def product[G[_]](implicit applicativeG: Applicative[G]): Applicative[({type f[x] = (F[x], G[x])})#f] =
+    new Applicative[({type f[x] = (F[x], G[x])})#f] {
+      val functor: Functor[({type f[x] = (F[x], G[x])})#f] = self.functor product applicativeG.functor
       def unit[A](a: => A): (F[A], G[A]) = (self.unit(a), applicativeG.unit(a))
       def apply[A, B](fgf: (F[A => B], G[A => B]))(fga: (F[A], G[A])): (F[B], G[B]) =
         (self.apply(fgf._1)(fga._1), applicativeG.apply(fgf._2)(fga._2))

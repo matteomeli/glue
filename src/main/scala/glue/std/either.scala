@@ -9,9 +9,9 @@ trait EitherFunctions {}
 trait EitherSyntax {}
 
 trait EitherImplicits {
-  implicit def eitherIsApplicative[L]: Applicative[({type λ[α] = Either[L, α]})#λ] =
-    new Applicative[({type λ[α] = Either[L, α]})#λ] {
-      val functor: Functor[({type λ[α] = Either[L, α]})#λ] = new Functor[({type λ[α] = Either[L, α]})#λ] {
+  implicit def eitherIsApplicative[L]: Applicative[({type f[x] = Either[L, x]})#f] =
+    new Applicative[({type f[x] = Either[L, x]})#f] {
+      val functor: Functor[({type f[x] = Either[L, x]})#f] = new Functor[({type f[x] = Either[L, x]})#f] {
         def map[A, B](e: Either[L, A])(f: A => B): Either[L, B] = e map f
       }
       def unit[A](a: => A): Either[L, A] = Right(a)
