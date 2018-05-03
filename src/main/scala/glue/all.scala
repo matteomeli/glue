@@ -7,6 +7,7 @@ trait AllTypeclasses {
   type Functor[F[_]] = typeclass.Functor[F]
   type Monoid[A] = typeclass.Monoid[A]
   type Show[A] = typeclass.Show[A]
+  type Traverse[F[_]] = typeclass.Traverse[F]
 
   val Applicative = typeclass.Applicative
   val Eq = typeclass.Eq
@@ -14,6 +15,7 @@ trait AllTypeclasses {
   val Functor = typeclass.Functor
   val Monoid = typeclass.Monoid
   val Show = typeclass.Show
+  val Traverse = typeclass.Traverse
 }
 
 trait AllData {
@@ -36,6 +38,7 @@ trait AllFunctions
   with typeclass.FunctorFunctions
   with typeclass.MonoidFunctions
   with typeclass.ShowFunctions
+  with typeclass.TraverseFunctions
 
 trait AllSyntax
   extends std.AllSyntax
@@ -47,6 +50,7 @@ trait AllSyntax
   with typeclass.FunctorSyntax
   with typeclass.MonoidSyntax
   with typeclass.ShowSyntax
+  with typeclass.TraverseSyntax
 
 trait AllImplicits
   extends std.AllImplicits

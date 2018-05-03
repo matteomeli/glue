@@ -1,6 +1,6 @@
 package glue.std
 
-import glue.typeclass.{Applicative, Functor}
+import glue.typeclass.{Applicative, Foldable, Functor, Monoid, Traverse}
 
 object either extends EitherFunctions with EitherSyntax with EitherImplicits
 
@@ -9,6 +9,17 @@ trait EitherFunctions {}
 trait EitherSyntax {}
 
 trait EitherImplicits {
+  implicit def eitherIsFoldable[L]: Foldable[({type f[x] = Either[L, x]})#f] =
+    new Foldable[({type f[x] = Either[L, x]})#f] {
+      def foldLeft[A, B](e: Either[L, A])(z: B)(f: (B, A) => B): B = e match {
+        case Left(_) => z
+        case Right(a) => f(z, a)
+      }
+      def foldRight[A, B](e: Either[L, A])(z: B)(f: (A, B) => B): B = foldLeft(e)(z) { (b, a) => f(a, b) }
+      def foldMap[A, B](e: Either[L, A])(f: A => B)(implicit monoid: Monoid[B]): B =
+        foldLeft(e)(monoid.unit) { (b, a) => monoid.combine(b, f(a)) }
+    }
+
   implicit def eitherIsApplicative[L]: Applicative[({type f[x] = Either[L, x]})#f] =
     new Applicative[({type f[x] = Either[L, x]})#f] {
       val functor: Functor[({type f[x] = Either[L, x]})#f] = Functor[({type f[x] = Either[L, x]})#f]
@@ -19,5 +30,12 @@ trait EitherImplicits {
   private implicit def eitherIsFunctor[L]: Functor[({type f[x] = Either[L, x]})#f] =
     new Functor[({type f[x] = Either[L, x]})#f] {
       def map[A, B](e: Either[L, A])(f: A => B): Either[L, B] = e map f
+    }
+
+  implicit def eitherIsTraversable[L]: Traverse[({type f[x] = Either[L, x]})#f] =
+    new Traverse[({type f[x] = Either[L, x]})#f] {
+      val foldable: Foldable[({type f[x] = Either[L, x]})#f] = Foldable[({type f[x] = Either[L, x]})#f]
+      val functor: Functor[({type f[x] = Either[L, x]})#f] = Functor[({type f[x] = Either[L, x]})#f]
+      def traverse[G[_], A, B](fa: Either[L, A])(f: A => G[B])(implicit applicative: Applicative[G]): G[Either[L, B]] = ???
     }
 }
