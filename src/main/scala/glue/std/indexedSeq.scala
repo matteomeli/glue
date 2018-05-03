@@ -31,10 +31,12 @@ trait IndexedSeqImplicits {
   }
 
   implicit val indexedSeqIsApplicative: Applicative[IndexedSeq] = new Applicative[IndexedSeq] {
-    val functor: Functor[IndexedSeq] = new Functor[IndexedSeq] {
-      def map[A, B](fa: IndexedSeq[A])(f: A => B): IndexedSeq[B] = fa map f
-    }
+    val functor: Functor[IndexedSeq] = Functor[IndexedSeq]
     def unit[A](a: => A): IndexedSeq[A] = IndexedSeq(a)
     def apply[A, B](f: IndexedSeq[A => B])(as: IndexedSeq[A]): IndexedSeq[B] = as flatMap { a => f.map(_(a)) }
+  }
+
+  private implicit def indexedSeqIsFunctor: Functor[IndexedSeq] = new Functor[IndexedSeq] {
+    def map[A, B](fa: IndexedSeq[A])(f: A => B): IndexedSeq[B] = fa map f
   }
 }

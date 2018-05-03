@@ -24,10 +24,12 @@ trait ListImplicits {
   }
 
   implicit val listIsApplicative: Applicative[List] = new Applicative[List] {
-    val functor: Functor[List] = new Functor[List] {
-      def map[A, B](as: List[A])(f: A => B): List[B] = as map f
-    }
+    val functor: Functor[List] = Functor[List]
     def unit[A](a: => A): List[A] = List(a)
     def apply[A, B](f: List[A => B])(as: List[A]): List[B] = as flatMap { a => f.map(_(a)) }
+  }
+
+  private implicit def listIsFunctor: Functor[List] = new Functor[List] {
+    def map[A, B](as: List[A])(f: A => B): List[B] = as map f
   }
 }

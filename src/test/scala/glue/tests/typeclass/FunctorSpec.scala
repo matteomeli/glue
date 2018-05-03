@@ -9,7 +9,7 @@ import scala.language.postfixOps
 
 class FunctorSpec extends WordSpec with Matchers {
   val len: String => Int = _.length
-  val double: Int => Int = (i: Int) => i * i
+  val square: Int => Int = (i: Int) => i * i
 
   "A Functor" should {
     "map (fmap)" in {
@@ -47,7 +47,7 @@ class FunctorSpec extends WordSpec with Matchers {
     }
 
     "fcompose" in {
-      some("glue").fcompose(len, double) shouldBe some(16)
+      some("glue").fcompose(len, square) shouldBe some(16)
 
       List("aaa", "bb", "c").fcompose(len, identity[Int]) shouldBe List(3, 2, 1)
     }
@@ -57,7 +57,7 @@ class FunctorSpec extends WordSpec with Matchers {
     }
 
     "fpair" in {
-      some(2).fpair(double) shouldBe some((2, 4))
+      some(2).fpair(square) shouldBe some((2, 4))
       List("aaa", "bb", "c").fpair(len).toMap shouldBe Map("aaa" -> 3, "bb" -> 2, "c" -> 1)
     }
 

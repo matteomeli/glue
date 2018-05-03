@@ -17,8 +17,11 @@ trait AllTypeclasses {
 }
 
 trait AllData {
+  type Const[A, B] = data.Const[A, B]
   type Identity[A] = data.Identity[A]
+
   val Identity = data.Identity
+  val Const = data.Const
 }
 
 trait AllDataAliases {
@@ -36,6 +39,7 @@ trait AllFunctions
 
 trait AllSyntax
   extends std.AllSyntax
+  with data.ConstSyntax
   with data.IdentitySyntax
   with typeclass.ApplicativeSyntax
   with typeclass.EqSyntax
@@ -46,6 +50,7 @@ trait AllSyntax
 
 trait AllImplicits
   extends std.AllImplicits
+  with data.ConstImplicits
   with data.IdentityImplicits
   with typeclass.MonoidImplicits
 

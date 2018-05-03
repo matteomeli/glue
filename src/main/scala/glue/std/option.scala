@@ -25,10 +25,12 @@ trait OptionImplicits {
   }
 
   implicit val optionIsApplicative: Applicative[Option] = new Applicative[Option] {
-    val functor: Functor[Option] = new Functor[Option] {
-      def map[A, B](o: Option[A])(f: A => B): Option[B] = o map f
-    }
+    val functor: Functor[Option] = Functor[Option]
     def unit[A](a: => A): Option[A] = Some(a)
     def apply[A, B](f: Option[A => B])(o: Option[A]): Option[B] = o flatMap { a => f.map(_(a)) }
+  }
+
+  private implicit def optionIsFunctor: Functor[Option] = new Functor[Option] {
+    def map[A, B](o: Option[A])(f: A => B): Option[B] = o map f
   }
 }
