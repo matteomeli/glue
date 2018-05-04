@@ -6,14 +6,14 @@ trait Monoid[A] { self =>
   def combineAll(as: TraversableOnce[A]): A = as.foldLeft(unit)(combine)
 
   // The product of two monoids on types A and B is a monoid of type (A, B)
-  def product[B](implicit monoidB: Monoid[B]): Monoid[(A, B)] = new Monoid[(A, B)] {
-    val unit: (A, B) = (self.unit, monoidB.unit)
-    def combine(x: (A, B), y: (A, B)): (A, B) = (self.combine(x._1, y._1), monoidB.combine(x._2, y._2))
+  def product[B](implicit M: Monoid[B]): Monoid[(A, B)] = new Monoid[(A, B)] {
+    val unit: (A, B) = (self.unit, M.unit)
+    def combine(x: (A, B), y: (A, B)): (A, B) = (self.combine(x._1, y._1), M.combine(x._2, y._2))
   }
 }
 
 object Monoid extends MonoidFunctions {
-  def apply[A](implicit monoid: Monoid[A]): Monoid[A] = monoid
+  def apply[A](implicit M: Monoid[A]): Monoid[A] = M
 
   def mapMerge[K, V](implicit V: Monoid[V]): Monoid[Map[K, V]] = new Monoid[Map[K, V]] {
     val unit: Map[K, V] = Map[K, V]()
@@ -23,9 +23,9 @@ object Monoid extends MonoidFunctions {
       }
   }
 
-  def functionMerge[A, B](implicit B: Monoid[B]): Monoid[A => B] = new Monoid[A => B] {
-    val unit: A => B = _ => B.unit
-    def combine(f: A => B, g: A => B): A => B = a => B.combine(f(a), g(a))
+  def functionMerge[A, B](implicit M: Monoid[B]): Monoid[A => B] = new Monoid[A => B] {
+    val unit: A => B = _ => M.unit
+    def combine(f: A => B, g: A => B): A => B = a => M.combine(f(a), g(a))
   }
 
   object syntax extends MonoidSyntax
@@ -73,6 +73,6 @@ trait MonoidLaws[A] {
 }
 
 object MonoidLaws {
-  def apply[A](implicit ev: Monoid[A]): MonoidLaws[A] =
-    new MonoidLaws[A] { def monoid: Monoid[A] = ev }
+  def apply[A](implicit M: Monoid[A]): MonoidLaws[A] =
+    new MonoidLaws[A] { def monoid: Monoid[A] = M }
 }

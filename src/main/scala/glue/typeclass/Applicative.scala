@@ -25,26 +25,26 @@ trait Applicative[F[_]] { self =>
     (List.fill(n)(fa)).foldRight(unit(List[A]()))((fa, l) => map2(fa, l)(_ :: _))
 
   // The composition of two applicative functors F anf G is a functor of type F[G[x]] for any type x.
-  def compose[G[_]](implicit applicativeG: Applicative[G]): Applicative[({type f[x] = F[G[x]]})#f] =
+  def compose[G[_]](implicit G: Applicative[G]): Applicative[({type f[x] = F[G[x]]})#f] =
     new Applicative[({type f[x] = F[G[x]]})#f] {
-      val functor: Functor[({type f[x] = F[G[x]]})#f] = self.functor compose applicativeG.functor
-      def unit[A](a: => A): F[G[A]] = self.unit(applicativeG.unit(a))
+      val functor: Functor[({type f[x] = F[G[x]]})#f] = self.functor compose G.functor
+      def unit[A](a: => A): F[G[A]] = self.unit(G.unit(a))
       def apply[A, B](fgf: F[G[A => B]])(fga: F[G[A]]): F[G[B]] =
-        self.map2(fgf, fga) { case (gf, ga) => applicativeG.apply(gf)(ga) }
+        self.map2(fgf, fga) { case (gf, ga) => G.apply(gf)(ga) }
     }
 
   // The product of two applicative functors F anf G is a functor of type (F[x], G[x]) for any type x.
-  def product[G[_]](implicit applicativeG: Applicative[G]): Applicative[({type f[x] = (F[x], G[x])})#f] =
+  def product[G[_]](implicit G: Applicative[G]): Applicative[({type f[x] = (F[x], G[x])})#f] =
     new Applicative[({type f[x] = (F[x], G[x])})#f] {
-      val functor: Functor[({type f[x] = (F[x], G[x])})#f] = self.functor product applicativeG.functor
-      def unit[A](a: => A): (F[A], G[A]) = (self.unit(a), applicativeG.unit(a))
+      val functor: Functor[({type f[x] = (F[x], G[x])})#f] = self.functor product G.functor
+      def unit[A](a: => A): (F[A], G[A]) = (self.unit(a), G.unit(a))
       def apply[A, B](fgf: (F[A => B], G[A => B]))(fga: (F[A], G[A])): (F[B], G[B]) =
-        (self.apply(fgf._1)(fga._1), applicativeG.apply(fgf._2)(fga._2))
+        (self.apply(fgf._1)(fga._1), G.apply(fgf._2)(fga._2))
     }
 }
 
 object Applicative extends ApplicativeFunctions {
-  def apply[F[_]](implicit applicative: Applicative[F]): Applicative[F] = applicative
+  def apply[F[_]](implicit F: Applicative[F]): Applicative[F] = F
 
   object syntax extends ApplicativeSyntax
 }
@@ -124,6 +124,6 @@ trait ApplicativeLaws[F[_]] {
 }
 
 object ApplicativeLaws {
-  def apply[F[_]](implicit ev: Applicative[F]): ApplicativeLaws[F] =
-    new ApplicativeLaws[F] { def applicative: Applicative[F] = ev }
+  def apply[F[_]](implicit F: Applicative[F]): ApplicativeLaws[F] =
+    new ApplicativeLaws[F] { def applicative: Applicative[F] = F }
 }

@@ -35,8 +35,8 @@ trait OptionImplicits {
   implicit val optionIsTraversable: Traverse[Option] = new Traverse[Option] {
     val foldable: Foldable[Option] = Foldable[Option]
     val functor: Functor[Option] = Functor[Option]
-    def traverse[G[_], A, B](oa: Option[A])(f: A => G[B])(implicit applicative: Applicative[G]): G[Option[B]] =
-      oa.foldLeft(applicative.unit(none[B])) { (_, a) => applicative.map(f(a))(some(_)) }
+    def traverse[G[_], A, B](oa: Option[A])(f: A => G[B])(implicit G: Applicative[G]): G[Option[B]] =
+      oa.foldLeft(G.unit(none[B])) { (_, a) => G.map(f(a))(some(_)) }
   }
 
   private implicit def optionIsFunctor: Functor[Option] = new Functor[Option] {

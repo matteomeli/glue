@@ -7,7 +7,7 @@ trait Show[A] {
 }
 
 object Show extends ShowFunctions {
-  def apply[A](implicit show: Show[A]): Show[A] = show
+  def apply[A](implicit S: Show[A]): Show[A] = S
 
   def show[A](f: A => String): Show[A] = new Show[A] {
     def show(a: A): String = f(a)
@@ -19,7 +19,7 @@ object Show extends ShowFunctions {
 
   final case class InterpolateWithShow(override val toString: String) extends AnyVal
   object InterpolateWithShow {
-    implicit def apply[A](a: A)(implicit S: Show[A]): InterpolateWithShow = 
+    implicit def apply[A](a: A)(implicit S: Show[A]): InterpolateWithShow =
       InterpolateWithShow(S.show(a))
   }
   final case class ShowInterpolator(val sc: StringContext) extends AnyVal {

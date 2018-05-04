@@ -28,9 +28,9 @@ trait StreamImplicits {
   implicit val streamIsTraversable: Traverse[Stream] = new Traverse[Stream] {
     val foldable: Foldable[Stream] = Foldable[Stream]
     val functor: Functor[Stream] = Functor[Stream]
-    def traverse[G[_], A, B](as: Stream[A])(f: A => G[B])(implicit applicative: Applicative[G]): G[Stream[B]] =
-      as.foldRight(applicative.unit(Stream[B]())) { (a, gl) =>
-        applicative.map2(f(a), gl) { (b, l) => b #:: l }
+    def traverse[G[_], A, B](as: Stream[A])(f: A => G[B])(implicit G: Applicative[G]): G[Stream[B]] =
+      as.foldRight(G.unit(Stream[B]())) { (a, gl) =>
+        G.map2(f(a), gl) { (b, l) => b #:: l }
       }
   }
 

@@ -34,9 +34,9 @@ trait ListImplicits {
   implicit val listIsTraversable: Traverse[List] = new Traverse[List] {
     val foldable: Foldable[List] = Foldable[List]
     val functor: Functor[List] = Functor[List]
-    def traverse[G[_], A, B](as: List[A])(f: A => G[B])(implicit applicative: Applicative[G]): G[List[B]] =
-      as.foldLeft(applicative.unit(empty[B])) { (gl, a) =>
-        applicative.map2(gl, f(a)) { (l, b) => b :: l }
+    def traverse[G[_], A, B](as: List[A])(f: A => G[B])(implicit G: Applicative[G]): G[List[B]] =
+      as.foldLeft(G.unit(empty[B])) { (gl, a) =>
+        G.map2(gl, f(a)) { (l, b) => b :: l }
       }
   }
 

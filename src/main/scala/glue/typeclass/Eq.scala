@@ -6,7 +6,7 @@ trait Eq[A] {
 }
 
 object Eq extends EqFunctions {
-  def apply[A](implicit ev: Eq[A]): Eq[A] = ev
+  def apply[A](implicit E: Eq[A]): Eq[A] = E
 
   def fromEqualityA[A]: Eq[A] = new Eq[A] {
     def eqv(x: A, y: A): Boolean = x == y
@@ -36,8 +36,8 @@ object Eq extends EqFunctions {
     def eqv(x: A, y: A): Boolean = !e.eqv(x, y)
   }
 
-  def by[A, B](f: A => B)(implicit eb: Eq[B]): Eq[A] = new Eq[A] {
-    def eqv(x: A, y: A): Boolean = eb.eqv(f(x), f(y))
+  def by[A, B](f: A => B)(implicit E: Eq[B]): Eq[A] = new Eq[A] {
+    def eqv(x: A, y: A): Boolean = E.eqv(f(x), f(y))
   }
 
   object syntax extends EqSyntax
@@ -70,6 +70,6 @@ trait EqLaws[A] {
 }
 
 object EqLaws {
-  def apply[A](implicit ev: Eq[A]): EqLaws[A] =
-    new EqLaws[A] { def eq: Eq[A] = ev }
+  def apply[A](implicit E: Eq[A]): EqLaws[A] =
+    new EqLaws[A] { def eq: Eq[A] = E }
 }
