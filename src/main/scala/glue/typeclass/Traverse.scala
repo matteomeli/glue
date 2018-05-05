@@ -42,13 +42,46 @@ object Traverse extends TraverseFunctions {
 }
 
 trait TraverseFunctions {
-
+  def traverse[F[_]: Traverse, G[_]: Applicative, A, B](fa: F[A])(f: A => G[B]): G[F[B]] = Traverse[F].traverse(fa)(f)
+  def sequence[F[_]: Traverse, G[_]: Applicative, A, B](fga: F[G[A]]): G[F[A]] = Traverse[F].sequence(fga)
+  def map[F[_]: Traverse, A, B](fa: F[A])(f: A => B): F[B] = Traverse[F].map(fa)(f)
+  def foldMap[F[_]: Traverse, A, B](fa: F[A])(f: A => B)(implicit M: Monoid[B]): B = Traverse[F].foldMap(fa)(f)
+  def fuse[F[_]: Traverse, G[_], H[_], A, B](fa: F[A])(f: A => G[B], g: A => H[B])(implicit G: Applicative[G], H: Applicative[H]): (G[F[B]], H[F[B]]) =
+    Traverse[F].fuse(fa)(f, g)
 }
 
 trait TraverseSyntax {
-
+  implicit class TraverseOps[F[_]: Traverse, A](self: F[A]) {
+    def traverse[G[_]: Applicative, B](f: A => G[B]): G[F[B]] = Traverse[F].traverse(self)(f)
+    def sequence[G[_]: Applicative, B](implicit ev: A <:< G[B]): G[F[B]] = {
+      import glue.data.Identity.syntax._
+      ev.unused
+      Traverse[F].sequence(self.asInstanceOf[F[G[B]]])
+    }
+    def map[B](f: A => B): F[B] = Traverse[F].map(self)(f)
+    def foldMap[B](f: A => B)(implicit M: Monoid[B]): B = Traverse[F].foldMap(self)(f)
+    def fuse[G[_], H[_], B](f: A => G[B], g: A => H[B])(implicit G: Applicative[G], H: Applicative[H]): (G[F[B]], H[F[B]]) = Traverse[F].fuse(self)(f, g)
+  }
 }
 
-trait TraverseLaws {
+trait TraverseLaws[F[_]] {
+  implicit def traversable: Traverse[F]
 
+  import Traverse._
+
+  def identity[A](fa: F[A]): Boolean =
+    traverse(fa)(Identity(_)) == Identity(fa)
+
+  def composition[G[_], H[_], A, B, C](fa: F[A], f: A => G[B], g: B => H[C])(implicit G: Applicative[G], H: Applicative[H]): Boolean = {
+    val left: G[H[F[C]]] = traversable.traverse[({type f[x] = G[H[x]]})#f, A, C](fa)(a => G.map(f(a))(g))(G compose H)
+    val right: G[H[F[C]]] = G.map(traverse(fa)(f))(fb => traverse(fb)(g))
+    left == right
+  }
+
+  // TODO: Add naturality once natural transformation are defined
+}
+
+object TraverseLaws {
+  def apply[F[_]](implicit F: Traverse[F]): TraverseLaws[F] =
+    new TraverseLaws[F] { def traversable: Traverse[F] = F }
 }

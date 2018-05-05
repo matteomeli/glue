@@ -32,4 +32,9 @@ class LawsSpec extends GlueSpec {
   checkAll("Option[String]", ApplicativeLawsSpec[Option].applicative[String, String, String, String])
   checkAll("Either[Int, Int]", ApplicativeLawsSpec[({type f[x] = Either[Int, x]})#f].applicative[Int, Int, Int, Int])
   checkAll("Either[String, String]", ApplicativeLawsSpec[({type f[x] = Either[String, x]})#f].applicative[String, String, String, String])
+
+  checkAll("Identity[Int] (Applicative[Identity])", TraverseLawsSpec[Identity].traverse[Identity, Identity, Int, Int, Int])
+  checkAll("Identity[Int] (Applicative[List], Applicative[Option])", TraverseLawsSpec[Identity].traverse[List, Option, Int, Int, Int])
+  checkAll("Identity[Int] (Applicative[Option], Applicative[List])", TraverseLawsSpec[Identity].traverse[Option, List, Int, Int, Int])
+  // TODO: Add more tests for other traversable with different combinations of applicatives
 }

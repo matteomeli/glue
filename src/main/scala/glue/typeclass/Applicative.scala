@@ -68,13 +68,12 @@ trait ApplicativeFunctions {
 }
 
 trait ApplicativeSyntax {
-  import glue.data.Identity.syntax._
-
   implicit class ApplicativeOps[F[_]: Applicative, A](self: F[A]) {
     def apply[B](f: F[A => B]): F[B] = Applicative[F].apply(f)(self)
 
     // Allow the apply to be injected as well when A is of type Function1[B, C]
     def apply[B, C](fb: F[B])(implicit ev: A <:< B => C): F[C] = {
+      import glue.data.Identity.syntax._
       // This function uses generalized type constraints as implicit evidence parameters
       // If -Ywarn-unused:implicitshe is passed to the compiler,
       // it will issue a warning about ev being unused.
