@@ -1,6 +1,6 @@
 package glue.std
 
-import glue.typeclass.{Applicative, Foldable, Functor, Monoid, Traverse}
+import glue.typeclass.{Applicative, Foldable, Functor, Monad, Monoid, Traverse}
 
 object list extends ListFunctions with ListSyntax with ListImplicits
 
@@ -25,10 +25,9 @@ trait ListImplicits {
       as.foldLeft(M.unit)((b, a) => M.combine(b, f(a)))
   }
 
-  implicit val listIsApplicative: Applicative[List] = new Applicative[List] {
-    val functor: Functor[List] = Functor[List]
-    def unit[A](a: => A): List[A] = List(a)
-    def apply[A, B](f: List[A => B])(as: List[A]): List[B] = as flatMap { a => f.map(_(a)) }
+  implicit val listIsMonad: Monad[List] = new Monad[List] {
+    val applicative: Applicative[List] = Applicative[List]
+    def flatMap[A, B](as: List[A])(f: A => List[B]): List[B] = as flatMap f
   }
 
   implicit val listIsTraversable: Traverse[List] = new Traverse[List] {
@@ -38,6 +37,12 @@ trait ListImplicits {
       as.foldLeft(G.unit(empty[B])) { (gl, a) =>
         G.map2(gl, f(a)) { (l, b) => b :: l }
       }
+  }
+
+  private implicit def listIsApplicative: Applicative[List] = new Applicative[List] {
+    val functor: Functor[List] = Functor[List]
+    def unit[A](a: => A): List[A] = List(a)
+    def apply[A, B](f: List[A => B])(as: List[A]): List[B] = as flatMap { a => f.map(_(a)) }
   }
 
   private implicit def listIsFunctor: Functor[List] = new Functor[List] {

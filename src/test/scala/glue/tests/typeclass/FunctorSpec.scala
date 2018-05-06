@@ -47,9 +47,9 @@ class FunctorSpec extends WordSpec with Matchers {
     }
 
     "fcompose" in {
-      some("glue").fcompose(len, square) shouldBe some(16)
+      some("glue").composeF(len, square) shouldBe some(16)
 
-      List("aaa", "bb", "c").fcompose(len, identity[Int]) shouldBe List(3, 2, 1)
+      List("aaa", "bb", "c").composeF(len, identity[Int]) shouldBe List(3, 2, 1)
     }
 
     "pair" in {
@@ -57,8 +57,8 @@ class FunctorSpec extends WordSpec with Matchers {
     }
 
     "fpair" in {
-      some(2).fpair(square) shouldBe some((2, 4))
-      List("aaa", "bb", "c").fpair(len).toMap shouldBe Map("aaa" -> 3, "bb" -> 2, "c" -> 1)
+      some(2).pairF(square) shouldBe some((2, 4))
+      List("aaa", "bb", "c").pairF(len).toMap shouldBe Map("aaa" -> 3, "bb" -> 2, "c" -> 1)
     }
 
     "strengthL" in {

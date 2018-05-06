@@ -20,7 +20,7 @@ trait Applicative[F[_]] { self =>
   def map4[A, B, C, D, E](fa: F[A], fb: F[B], fc: F[C], fd: F[D])(f: (A, B, C, D) => E): F[E] =
     apply(apply(apply(apply(unit(f.curried))(fa))(fb))(fc))(fd)
 
-  def fproduct[A, B](fa: F[A], fb: F[B]): F[(A, B)] = map2(fa, fb)((_, _))
+  def product[A, B](fa: F[A], fb: F[B]): F[(A, B)] = map2(fa, fb)((_, _))
   def replicateM[A](n: Int, fa: F[A]): F[List[A]] =
     (List.fill(n)(fa)).foldRight(unit(List[A]()))((fa, l) => map2(fa, l)(_ :: _))
 
@@ -62,7 +62,7 @@ trait ApplicativeFunctions {
   def map4[F[_]: Applicative, A, B, C, D, E](fa: F[A], fb: F[B], fc: F[C], fd: F[D])(f: (A, B, C, D) => E): F[E] =
     Applicative[F].map4(fa, fb, fc, fd)(f)
 
-  def fproduct[F[_]: Applicative, A, B](fa: F[A], fb: F[B]): F[(A, B)] = Applicative[F].fproduct(fa, fb)
+  def product[F[_]: Applicative, A, B](fa: F[A], fb: F[B]): F[(A, B)] = Applicative[F].product(fa, fb)
   def replicateM[F[_]: Applicative, A](n: Int, fa: F[A]): F[List[A]] =
     Applicative[F].replicateM(n, fa)
 }
@@ -90,7 +90,7 @@ trait ApplicativeSyntax {
     def map4[B, C, D, E](fb: F[B], fc: F[C], fd: F[D])(f: (A, B, C, D) => E): F[E] =
       Applicative[F].map4(self, fb, fc, fd)(f)
 
-    def fproduct[B](fb: F[B]): F[(A, B)] = Applicative[F].fproduct(self, fb)
+    def product[B](fb: F[B]): F[(A, B)] = Applicative[F].product(self, fb)
     def replicateM(n: Int): F[List[A]] = Applicative[F].replicateM(n, self)
   }
 }
@@ -105,7 +105,7 @@ trait ApplicativeLaws[F[_]] {
   def rightIdentity[A](fa: F[A]): Boolean = map2(fa, unit(()))((a, _) => a) == fa
   def associativity[A, B, C](fa: F[A], fb: F[B], fc: F[C]): Boolean = {
     def reassoc(p: (A, (B, C))): ((A, B), C) = p match { case (a, (b, c)) => ((a, b), c)}
-    fproduct(fproduct(fa, fb), fc) == map(fproduct(fa, fproduct(fb, fc)))(reassoc)
+    product(product(fa, fb), fc) == map(product(fa, product(fb, fc)))(reassoc)
   }
   def homomorphism[A, B](a: A, f: A => B): Boolean = unit(a).apply(unit(f)) == unit(f(a))
   def interchange[A, B](a: A, ff: F[A => B]): Boolean =
@@ -117,8 +117,8 @@ trait ApplicativeLaws[F[_]] {
   def applicativeMap[A, B](fa: F[A], f: A => B): Boolean =
     fa.map(f) == fa.apply(unit(f))
   def naturality[A, B, C, D](fa: F[A], fb: F[C], f: A => B, g: C => D): Boolean = {
-    def productF(f: A => B, g: C => D): (A, C) => (B, D) = (a, c) => (f(a), g(c))
-    map2(fa, fb)(productF(f, g)) == fproduct(map(fa)(f), map(fb)(g))
+    def pair(f: A => B, g: C => D): (A, C) => (B, D) = (a, c) => (f(a), g(c))
+    map2(fa, fb)(pair(f, g)) == product(map(fa)(f), map(fb)(g))
   }
 }
 

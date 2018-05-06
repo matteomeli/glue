@@ -1,6 +1,6 @@
 package glue.std
 
-import glue.typeclass.{Applicative, Foldable, Functor, Monoid, Traverse}
+import glue.typeclass.{Applicative, Foldable, Functor, Monad, Monoid, Traverse}
 
 object either extends EitherFunctions with EitherSyntax with EitherImplicits
 
@@ -20,7 +20,13 @@ trait EitherImplicits {
         foldLeft(e)(M.unit) { (b, a) => M.combine(b, f(a)) }
     }
 
-  implicit def eitherIsApplicative[L]: Applicative[({type f[x] = Either[L, x]})#f] =
+  implicit def eitherIsMonad[L]: Monad[({type f[x] = Either[L, x]})#f] =
+    new Monad[({type f[x] = Either[L, x]})#f] {
+      val applicative: Applicative[({type f[x] = Either[L, x]})#f] = Applicative[({type f[x] = Either[L, x]})#f]
+      def flatMap[A, B](e: Either[L, A])(f: A => Either[L, B]): Either[L, B] = e flatMap f
+    }
+
+  private implicit def eitherIsApplicative[L]: Applicative[({type f[x] = Either[L, x]})#f] =
     new Applicative[({type f[x] = Either[L, x]})#f] {
       val functor: Functor[({type f[x] = Either[L, x]})#f] = Functor[({type f[x] = Either[L, x]})#f]
       def unit[A](a: => A): Either[L, A] = Right(a)

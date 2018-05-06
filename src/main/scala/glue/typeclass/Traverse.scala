@@ -17,7 +17,7 @@ trait Traverse[F[_]] { self =>
 
   // Traversing with the Identity applicative is equivalent to Functor.map
   def map[A, B](fa: F[A])(f: A => B): F[B] =
-    traverse(fa)(a => Applicative[Identity].unit(f(a))).run
+    traverse(fa)(a => Monad[Identity].applicative.unit(f(a)))(Monad[Identity].applicative).run
 
   // Traversing with Const applicative is quivalent to Foldable.foldMap
   def foldMap[A, M](fa: F[A])(f: A => M)(implicit M: Monoid[M]): M =
@@ -72,7 +72,7 @@ trait TraverseLaws[F[_]] {
   import Traverse._
 
   def identity[A](fa: F[A]): Boolean =
-    traverse(fa)(Identity(_)) == Identity(fa)
+    traversable.traverse(fa)(Identity(_))(Monad[Identity].applicative) == Identity(fa)
 
   def composition[G[_], H[_], A, B, C](fa: F[A], f: A => G[B], g: B => H[C])(implicit G: Applicative[G], H: Applicative[H]): Boolean = {
     val left: G[H[F[C]]] = traversable.traverse[({type f[x] = G[H[x]]})#f, A, C](fa)(a => G.map(f(a))(g))(G compose H)

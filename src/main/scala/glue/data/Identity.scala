@@ -1,6 +1,6 @@
 package glue.data
 
-import glue.typeclass.{Applicative, Foldable, Functor, Monoid, Traverse}
+import glue.typeclass.{Applicative, Foldable, Functor, Monad, Monoid, Traverse}
 
 final case class Identity[A](run: A) extends AnyVal
 
@@ -23,14 +23,19 @@ trait IdentityImplicits {
     def foldMap[A, B](ia: Identity[A])(f: A => B)(implicit M: Monoid[B]): B = M.combine(M.unit, f(ia.run))
   }
 
-  implicit val idIsTraversable: Traverse[Identity] = new Traverse[Identity] {
+  implicit val isIsMonad: Monad[Identity] = new Monad[Identity] {
+    val applicative: Applicative[Identity] = Applicative[Identity]
+    def flatMap[A, B](ia: Identity[A])(f: A => Identity[B]): Identity[B] = f(ia.run)
+  }
+
+  implicit def idIsTraversable: Traverse[Identity] = new Traverse[Identity] {
     val foldable: Foldable[Identity] = Foldable[Identity]
     val functor: Functor[Identity] = Functor[Identity]
     def traverse[G[_], A, B](ia: Identity[A])(f: A => G[B])(implicit G: Applicative[G]): G[Identity[B]] =
       G.map(f(ia.run))(Identity(_))
   }
 
-  implicit val idIsApplicative: Applicative[Identity] = new Applicative[Identity] {
+  private implicit def idIsApplicative: Applicative[Identity] = new Applicative[Identity] {
     val functor: Functor[Identity] = Functor[Identity]
     def unit[A](a: => A): Identity[A] = Identity(a)
     def apply[A, B](f: Identity[A => B])(fa: Identity[A]): Identity[B] = Identity(f.run(fa.run))
