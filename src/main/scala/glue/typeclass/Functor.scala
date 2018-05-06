@@ -73,7 +73,7 @@ trait FunctorSyntax {
 }
 
 trait FunctorLaws[F[_]] {
-  implicit def functor: Functor[F]
+  implicit val functor: Functor[F]
 
   import Functor.syntax._
 
@@ -84,5 +84,5 @@ trait FunctorLaws[F[_]] {
 
 object FunctorLaws {
   def apply[F[_]](implicit F: Functor[F]): FunctorLaws[F] =
-    new FunctorLaws[F] { def functor: Functor[F] = F }
+    new FunctorLaws[F] { val functor: Functor[F] = F }
 }

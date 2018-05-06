@@ -64,7 +64,7 @@ trait MonoidImplicits {
 }
 
 trait MonoidLaws[A] {
-  implicit def monoid: Monoid[A]
+  implicit val monoid: Monoid[A]
 
   def leftIdentity(a: A): Boolean = monoid.combine(monoid.unit, a) == a
   def rightIdentity(a: A): Boolean = monoid.combine(a, monoid.unit) == a
@@ -74,5 +74,5 @@ trait MonoidLaws[A] {
 
 object MonoidLaws {
   def apply[A](implicit M: Monoid[A]): MonoidLaws[A] =
-    new MonoidLaws[A] { def monoid: Monoid[A] = M }
+    new MonoidLaws[A] { val monoid: Monoid[A] = M }
 }

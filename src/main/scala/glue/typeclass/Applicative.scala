@@ -96,7 +96,7 @@ trait ApplicativeSyntax {
 }
 
 trait ApplicativeLaws[F[_]] {
-  implicit def applicative: Applicative[F]
+  implicit val applicative: Applicative[F]
 
   import Applicative._
   import Applicative.syntax._
@@ -124,5 +124,5 @@ trait ApplicativeLaws[F[_]] {
 
 object ApplicativeLaws {
   def apply[F[_]](implicit F: Applicative[F]): ApplicativeLaws[F] =
-    new ApplicativeLaws[F] { def applicative: Applicative[F] = F }
+    new ApplicativeLaws[F] { val applicative: Applicative[F] = F }
 }

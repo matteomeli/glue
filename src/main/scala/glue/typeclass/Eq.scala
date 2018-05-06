@@ -60,7 +60,7 @@ trait EqSyntax {
 }
 
 trait EqLaws[A] {
-  implicit def eq: Eq[A]
+  implicit val eq: Eq[A]
 
   import Eq._
 
@@ -71,5 +71,5 @@ trait EqLaws[A] {
 
 object EqLaws {
   def apply[A](implicit E: Eq[A]): EqLaws[A] =
-    new EqLaws[A] { def eq: Eq[A] = E }
+    new EqLaws[A] { val eq: Eq[A] = E }
 }

@@ -67,7 +67,7 @@ trait TraverseSyntax {
 }
 
 trait TraverseLaws[F[_]] {
-  implicit def traversable: Traverse[F]
+  implicit val traversable: Traverse[F]
 
   import Traverse._
 
@@ -90,5 +90,5 @@ trait TraverseLaws[F[_]] {
 
 object TraverseLaws {
   def apply[F[_]](implicit F: Traverse[F]): TraverseLaws[F] =
-    new TraverseLaws[F] { def traversable: Traverse[F] = F }
+    new TraverseLaws[F] { val traversable: Traverse[F] = F }
 }
