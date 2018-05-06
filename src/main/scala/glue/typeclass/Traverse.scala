@@ -5,6 +5,8 @@ import glue.data.Identity.implicits._
 
 import Monoid.implicits._
 
+import glue.NaturalTransformation
+
 trait Traverse[F[_]] { self =>
   val functor: Functor[F]
   val foldable: Foldable[F]
@@ -78,7 +80,12 @@ trait TraverseLaws[F[_]] {
     left == right
   }
 
-  // TODO: Add naturality once natural transformation are defined
+  def purity[G[_], A](fa: F[A])(implicit G: Applicative[G]): Boolean =
+    traversable.traverse(fa)(G.unit(_)) == G.unit(fa)
+
+  def naturality[G[_], H[_], A, B](fa: F[A], f: A => G[B], t: NaturalTransformation[G, H])(implicit G: Applicative[G], H: Applicative[H]): Boolean = {
+    t(traversable.traverse(fa)(f)) == traversable.traverse(fa)(a => t(f(a)))
+  }
 }
 
 object TraverseLaws {

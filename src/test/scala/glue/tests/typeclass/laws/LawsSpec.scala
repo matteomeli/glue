@@ -36,5 +36,4 @@ class LawsSpec extends GlueSpec {
   checkAll("Identity[Int] (Applicative[Identity])", TraverseLawsSpec[Identity].traverse[Identity, Identity, Int, Int, Int])
   checkAll("Identity[Int] (Applicative[List], Applicative[Option])", TraverseLawsSpec[Identity].traverse[List, Option, Int, Int, Int])
   checkAll("Identity[Int] (Applicative[Option], Applicative[List])", TraverseLawsSpec[Identity].traverse[Option, List, Int, Int, Int])
-  // TODO: Add more tests for other traversable with different combinations of applicatives
 }

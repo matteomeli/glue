@@ -18,6 +18,8 @@ trait TraverseLawsSpec[F[_]] {
       include(FunctorLawsSpec[F](laws.traversable.functor).functor[A, B, C])
       property("identity") = forAll(laws.identity[A] _)
       property("compositon") = forAll(laws.composition[G, H, A, B, C] _)
+      property("purity") = forAll(laws.purity[G, A] _)
+      //property("naturality") = forAll(laws.naturality[G, H, A, B] _)
     }
 }
 
