@@ -28,6 +28,10 @@ trait ListImplicits {
   implicit val listIsMonad: Monad[List] = new Monad[List] {
     val applicative: Applicative[List] = Applicative[List]
     def flatMap[A, B](as: List[A])(f: A => List[B]): List[B] = as flatMap f
+    override def map[A, B](as: List[A])(f: A => B): List[B] = as map f
+    override def map2[A, B, C](as: List[A], bs: List[B])(f: (A, B) => C): List[C] =
+      if (bs.isEmpty) Nil
+      else as.flatMap(a => bs.map(b => f(a, b)))
   }
 
   implicit val listIsTraversable: Traverse[List] = new Traverse[List] {
@@ -42,7 +46,9 @@ trait ListImplicits {
   private implicit def listIsApplicative: Applicative[List] = new Applicative[List] {
     val functor: Functor[List] = Functor[List]
     def unit[A](a: => A): List[A] = List(a)
-    def apply[A, B](f: List[A => B])(as: List[A]): List[B] = as flatMap { a => f.map(_(a)) }
+    def apply[A, B](f: List[A => B])(as: List[A]): List[B] =
+      if (f.isEmpty) Nil
+      else as flatMap { a => f.map(_(a)) }
   }
 
   private implicit def listIsFunctor: Functor[List] = new Functor[List] {
