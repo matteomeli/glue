@@ -11,3 +11,9 @@ trait NaturalTransformation[F[_], G[_]] { self =>
   def andThen[H[_]](f: NaturalTransformation[G, H]): NaturalTransformation[F, H] =
     f.compose(self)
 }
+
+object NaturalTransformation {
+  def id[F[_]]: NaturalTransformation[F, F] = new NaturalTransformation[F, F] {
+    def apply[A](fa: F[A]): F[A] = fa
+  }
+}

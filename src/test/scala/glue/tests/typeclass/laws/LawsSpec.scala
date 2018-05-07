@@ -6,6 +6,8 @@ import glue.tests.GlueArbitrary._
 import glue._
 import glue.all._
 
+import glue.NaturalTransformation._
+
 class LawsSpec extends GlueSpec {
   checkAll("Monoid[String]", MonoidLawsSpec[String].monoid)
   checkAll("Monoid[List[Int]]", MonoidLawsSpec[List[Int]].monoid)
@@ -33,7 +35,7 @@ class LawsSpec extends GlueSpec {
   checkAll("Either[Int, Int]", ApplicativeLawsSpec[({type f[x] = Either[Int, x]})#f].applicative[Int, Int, Int, Int])
   checkAll("Either[String, String]", ApplicativeLawsSpec[({type f[x] = Either[String, x]})#f].applicative[String, String, String, String])
 
-  checkAll("Identity[Int] (Applicative[Identity])", TraverseLawsSpec[Identity].traverse[Identity, Identity, Int, Int, Int])
-  checkAll("Identity[Int] (Applicative[List], Applicative[Option])", TraverseLawsSpec[Identity].traverse[List, Option, Int, Int, Int])
-  checkAll("Identity[Int] (Applicative[Option], Applicative[List])", TraverseLawsSpec[Identity].traverse[Option, List, Int, Int, Int])
+  checkAll("Identity[Int] (Applicative[Identity])", TraverseLawsSpec[Identity].traverse[Identity, Identity, Int, Int, Int](id))
+  checkAll("Identity[Int] (Applicative[List], Applicative[Option])", TraverseLawsSpec[Identity].traverse[List, Option, Int, Int, Int](headOption))
+  checkAll("Identity[Int] (Applicative[Option], Applicative[List])", TraverseLawsSpec[Identity].traverse[Option, List, Int, Int, Int](optionList))
 }

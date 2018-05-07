@@ -5,6 +5,8 @@ import org.scalacheck.Properties
 import org.scalatest.FunSuite
 import org.scalatest.prop.Checkers
 
+import glue.NaturalTransformation
+
 abstract class GlueSpec extends FunSuite with Checkers {
   def checkAll(name: String, props: Properties): Unit =
     for ((propName, prop) <- props.properties) {
@@ -19,4 +21,11 @@ abstract class GlueSpec extends FunSuite with Checkers {
         check(prop)
       }
     }
+
+
+  // Some natural transformations
+  val headOption: NaturalTransformation[List, Option] =
+    new NaturalTransformation[List, Option] { def apply[A](as: List[A]): Option[A] = as.headOption }
+  val optionList: NaturalTransformation[Option, List] =
+    new NaturalTransformation[Option, List] { def apply[A](oa: Option[A]): List[A] = oa.toList }
 }

@@ -83,7 +83,7 @@ trait TraverseLaws[F[_]] {
   def purity[G[_], A](fa: F[A])(implicit G: Applicative[G]): Boolean =
     traversable.traverse(fa)(G.unit(_)) == G.unit(fa)
 
-  def naturality[G[_], H[_], A, B](fa: F[A], f: A => G[B], t: NaturalTransformation[G, H])(implicit G: Applicative[G], H: Applicative[H]): Boolean = {
+  def naturality[G[_], H[_], A, B](t: NaturalTransformation[G, H])(fa: F[A], f: A => G[B])(implicit G: Applicative[G], H: Applicative[H]): Boolean = {
     t(traversable.traverse(fa)(f)) == traversable.traverse(fa)(a => t(f(a)))
   }
 }

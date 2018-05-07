@@ -1,5 +1,6 @@
 package glue.tests.typeclass.laws
 
+import glue.NaturalTransformation
 import glue.{Applicative, Traverse}
 import glue.typeclass.TraverseLaws
 
@@ -10,7 +11,8 @@ trait TraverseLawsSpec[F[_]] {
   def laws: TraverseLaws[F]
 
   def traverse[G[_]: Applicative, H[_]: Applicative, A: Arbitrary, B: Arbitrary, C: Arbitrary](
-    implicit arbFA: Arbitrary[F[A]],
+    t: NaturalTransformation[G, H])
+    (implicit arbFA: Arbitrary[F[A]],
     f: Arbitrary[A => G[B]],
     g: Arbitrary[B => H[C]],
     cogenA: Cogen[A],
@@ -19,7 +21,7 @@ trait TraverseLawsSpec[F[_]] {
       property("identity") = forAll(laws.identity[A] _)
       property("compositon") = forAll(laws.composition[G, H, A, B, C] _)
       property("purity") = forAll(laws.purity[G, A] _)
-      //property("naturality") = forAll(laws.naturality[G, H, A, B] _)
+      property("naturality") = forAll(laws.naturality[G, H, A, B](t) _)
     }
 }
 
