@@ -25,6 +25,8 @@ trait Monad[F[_]] {
       }
     }
 
+  def join[A](mma: F[F[A]]): F[A] = flatMap(mma)(identity)
+
   // Composition of Kleisli arrows, aka 'embellished' functions
   def compose[A, B, C](f: A => F[B], g: B => F[C]): A => F[C] = a => flatMap(f(a))(g)
 }
