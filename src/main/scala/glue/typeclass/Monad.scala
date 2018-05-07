@@ -1,6 +1,6 @@
 package glue.typeclass
 
-trait Monad[F[_]] {
+trait Monad[F[_]] { self =>
   val applicative: Applicative[F]
 
   def unit[A](a: => A): F[A] = applicative.unit(a)
@@ -29,10 +29,20 @@ trait Monad[F[_]] {
 
   // Composition of Kleisli arrows, aka 'embellished' functions
   def compose[A, B, C](f: A => F[B], g: B => F[C]): A => F[C] = a => flatMap(f(a))(g)
+
+  def composeM[G[_]](implicit G: Monad[G], T: Traverse[G]): Monad[({type f[x] = F[G[x]]})#f] = Monad.composeM(self, G, T)
 }
 
 object Monad extends MonadFunctions {
   def apply[F[_]](implicit F: Monad[F]): Monad[F] = F
+
+  // Monad composition is always possible if the inner Monad is also Traversable
+  def composeM[F[_], G[_]](implicit F: Monad[F], G: Monad[G], T: Traverse[G]): Monad[({type f[x] = F[G[x]]})#f] =
+    new Monad[({type f[x] = F[G[x]]})#f] {
+      val applicative: Applicative[({type f[x] = F[G[x]]})#f] = F.applicative compose G.applicative
+      def flatMap[A, B](fga: F[G[A]])(f: A => F[G[B]]): F[G[B]] =
+        F.flatMap(fga)(ga => F.map(T.traverse(ga)(f)(F.applicative))(G.join))
+    }
 
   object syntax extends MonadSyntax
 }
