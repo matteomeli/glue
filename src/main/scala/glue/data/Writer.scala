@@ -24,7 +24,6 @@ trait WriterFunctions {
   def written[W, A](w: Writer[W, A]): W = w.written
   def value[W, A](w: Writer[W, A]): A = w.value
 
-  def unit[W: Monoid, A](a: => A): Writer[W, A] = Writer(Monoid[W].unit, a)
   def map[W, A, B](w: Writer[W, A])(f: A => B): Writer[W, B] = w map f
   def flatMap[W: Monoid, A, B](w: Writer[W, A])(f: A => Writer[W, B]): Writer[W, B] = w flatMap f
 }
@@ -37,7 +36,7 @@ trait WriterImplicits {
 
   private implicit def writerIsApplicative[W: Monoid]: Applicative[({type f[x] = Writer[W, x]})#f] = new Applicative[({type f[x] = Writer[W, x]})#f] {
     val functor: Functor[({type f[x] = Writer[W, x]})#f] = Functor[({type f[x] = Writer[W, x]})#f]
-    def unit[A](a: => A): Writer[W, A] = Writer.unit(a)
+    def unit[A](a: => A): Writer[W, A] = Writer(Monoid[W].unit, a)
     def apply[A, B](wf: Writer[W, A => B])(wa: Writer[W, A]): Writer[W, B] = Writer {
       (Monoid[W].combine(wf.written, wa.written), wf.value(wa.value))
     }

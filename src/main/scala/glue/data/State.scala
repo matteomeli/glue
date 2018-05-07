@@ -25,6 +25,7 @@ object State extends StateFunctions {
 }
 
 trait StateFunctions {
+  def init[S, A](a: => A): State[S, A] = State(s => (s, a))
   def get[S]: State[S, S] = State(s => (s, s))
   def set[S](s: S): State[S, Unit] = State(_ => (s, ()))
   def modify[S](f: S => S): State[S, Unit] = for {
@@ -32,12 +33,11 @@ trait StateFunctions {
     _ <- set(f(s))
   } yield ()
 
-  def unit[S, A](a: => A): State[S, A] = State(s => (s, a))
   def map[S, A, B](s: State[S, A])(f: A => B): State[S, B] = s.map(f)
   def flatMap[S, A, B](s: State[S, A])(f: A => State[S, B]): State[S, B] = s.flatMap(f)
   def map2[S, A, B, C](s1: State[S, A], s2: State[S, B])(f: (A, B) => C): State[S, C] = s1.map2(s2)(f)
   def sequence[S, A](as: List[State[S, A]]): State[S, List[A]] =
-    as.foldRight[State[S, List[A]]](unit(List())) { (s, l) => s.map2(l)(_ :: _) }
+    as.foldRight[State[S, List[A]]](init(List())) { (s, l) => s.map2(l)(_ :: _) }
 }
 
 trait StateImplicits {
@@ -48,7 +48,7 @@ trait StateImplicits {
 
   private implicit def stateIsApplicative[S]: Applicative[({type f[x] = State[S, x]})#f] = new Applicative[({type f[x] = State[S, x]})#f] {
     val functor: Functor[({type f[x] = State[S, x]})#f] = Functor[({type f[x] = State[S, x]})#f]
-    def unit[A](a: => A): State[S, A] = State.unit(a)
+    def unit[A](a: => A): State[S, A] = State.init(a)
     def apply[A, B](fs: State[S, A => B])(sa: State[S, A]): State[S, B] = for {
       a <- sa
       f <- fs

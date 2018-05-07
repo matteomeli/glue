@@ -5,13 +5,7 @@ import glue.typeclass.{Functor, Show}
 final case class Const[A, B](run: A)
 
 object Const {
-  object syntax extends ConstSyntax
-
   object implicits extends ConstImplicits
-}
-
-trait ConstSyntax {
-
 }
 
 trait ConstImplicits {

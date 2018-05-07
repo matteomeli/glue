@@ -20,7 +20,6 @@ trait ReaderFunctions {
   def apply[R, A](f: R => A): Reader[R, A] = Reader(f)
   def read[R]: Reader[R, R] = Reader(r => r)
 
-  def unit[R, A](a: => A): Reader[R, A] = Reader(_ => a)
   def map[R, A, B](r: Reader[R, A])(f: A => B): Reader[R, B] = r.map(f)
   def flatMap[R, A, B](r: Reader[R, A])(f: A => Reader[R, B]): Reader[R, B] = r.flatMap(f)
   def map2[R, A, B, C](ra: Reader[R, A], rb: Reader[R, B])(f: (A, B) => C): Reader[R, C] = ra.map2(rb)(f)
@@ -34,7 +33,7 @@ trait ReaderImplicits {
 
   private implicit def readerIsApplicative[R]: Applicative[({type f[x] = Reader[R, x]})#f] = new Applicative[({type f[x] = Reader[R, x]})#f] {
     val functor: Functor[({type f[x] = Reader[R, x]})#f] = Functor[({type f[x] = Reader[R, x]})#f]
-    def unit[A](a: => A): Reader[R, A] = Reader.unit(a)
+    def unit[A](a: => A): Reader[R, A] = Reader(_ => a)
     def apply[A, B](rf: Reader[R, A => B])(ra: Reader[R, A]): Reader[R, B] = Reader { r =>
       val a = ra.run(r)
       val f = rf.run(r)

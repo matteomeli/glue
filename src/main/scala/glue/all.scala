@@ -23,9 +23,15 @@ trait AllTypeclasses {
 trait AllData {
   type Const[A, B] = data.Const[A, B]
   type Identity[A] = data.Identity[A]
+  type Reader[R, A] = data.Reader[R, A]
+  type State[S, A] = data.State[S, A]
+  type Writer[W, A] = data.Writer[W, A]
 
   val Identity = data.Identity
   val Const = data.Const
+  val Reader = data.Reader
+  val State = data.State
+  val Writer = data.Writer
 }
 
 trait AllDataAliases {
@@ -45,8 +51,7 @@ trait AllFunctions
 
 trait AllSyntax
   extends std.AllSyntax
-  with data.ConstSyntax
-  with data.IdentitySyntax
+  with data.AllSyntax
   with typeclass.ApplicativeSyntax
   with typeclass.EqSyntax
   with typeclass.FoldableSyntax
@@ -58,8 +63,7 @@ trait AllSyntax
 
 trait AllImplicits
   extends std.AllImplicits
-  with data.ConstImplicits
-  with data.IdentityImplicits
+  with data.AllImplicits
   with typeclass.MonoidImplicits
 
 object functions extends AllFunctions
