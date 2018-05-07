@@ -11,6 +11,7 @@ trait AllSyntax
 trait AllImplicits
   extends ConstImplicits
   with IdentityImplicits
+  with OptionTImplicits
   with ReaderImplicits
   with StateImplicits
   with WriterImplicits
