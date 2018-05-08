@@ -1,7 +1,7 @@
 package glue.typeclass
 
 trait Monad[F[_]] { self =>
-  val applicative: Applicative[F]
+   val applicative: Applicative[F]
 
   def unit[A](a: => A): F[A] = applicative.unit(a)
   def pure[A](a: => A): F[A] = unit(a)
@@ -17,6 +17,8 @@ trait Monad[F[_]] { self =>
   def map2[A, B, C](ma: F[A], mb: F[B])(f: (A, B) => C): F[C] = flatMap(ma)(a => map(mb)(b => f(a, b)))
   def product[A, B](ma: F[A], mb: F[B]): F[(A, B)] = map2(ma, mb)((_, _))
 
+  def join[A](mma: F[F[A]]): F[A] = flatMap(mma)(identity)
+
   def filterM[A](as: List[A])(f: A => F[Boolean]): F[List[A]] =
     as.foldRight(unit(List[A]())) { (a, fl) =>
       flatMap(f(a)) { p =>
@@ -25,12 +27,38 @@ trait Monad[F[_]] { self =>
       }
     }
 
-  def join[A](mma: F[F[A]]): F[A] = flatMap(mma)(identity)
-
   // Composition of Kleisli arrows, aka 'embellished' functions
-  def compose[A, B, C](f: A => F[B], g: B => F[C]): A => F[C] = a => flatMap(f(a))(g)
+  def composeK[A, B, C](f: A => F[B], g: B => F[C]): A => F[C] = a => flatMap(f(a))(g)
 
   def composeM[G[_]](implicit G: Monad[G], T: Traverse[G]): Monad[({type f[x] = F[G[x]]})#f] = Monad.composeM(self, G, T)
+
+  def as[A, B](fa: F[A])(b: B): F[B] = fa.map(_ => b)
+
+  def skip[A](fa: F[A]): F[Unit] = as(fa)(())
+
+  def doWhile[A](fa: F[A])(cond: A => F[Boolean]): F[Unit] = for {
+    a <- fa
+    p <- cond(a)
+    _ <- if (p) doWhile(fa)(cond) else unit(())
+  } yield ()
+
+  def forever[A, B](fa: F[A]): F[B] = {
+    lazy val t: F[B] = forever(fa)
+    fa flatMap (_ => t)
+  }
+
+  def foldM[A, B](l: Stream[A])(z: B)(f: (B, A) => F[B]): F[B] =
+    l.foldLeft(unit(z))((fb, a) => fb.flatMap(b => f(b, a)))
+
+  def foldM_[A, B](l: Stream[A])(z: B)(f: (B, A) => F[B]): F[Unit] =
+    skip { foldM(l)(z)(f) }
+
+  def foreachM[A](l: Stream[A])(f: A => F[Unit]): F[Unit] =
+    foldM_(l)(()) { (_, a) => skip(f(a)) }
+
+  // This is so we can have for { ... } syntax in trait's functions
+  import Monad.syntax._
+  implicit def toMonaadic[A](fa: F[A]): MonadOps[F, A] = new MonadOps[F, A](fa)(this)
 }
 
 object Monad extends MonadFunctions {
@@ -57,7 +85,7 @@ trait MonadFunctions {
   def map2[F[_]: Monad, A, B, C](ma: F[A], mb: F[B])(f: (A, B) => C): F[C] = Monad[F].map2(ma, mb)(f)
   def product[F[_]: Monad, A, B](ma: F[A], mb: F[B]): F[(A, B)] = Monad[F].product(ma, mb)
   def filterM[F[_]: Monad, A](as: List[A])(f: A => F[Boolean]): F[List[A]] = Monad[F].filterM(as)(f)
-  def compose[F[_]: Monad, A, B, C](f: A => F[B], g: B => F[C]): A => F[C] = Monad[F].compose(f, g)
+  def composeK[F[_]: Monad, A, B, C](f: A => F[B], g: B => F[C]): A => F[C] = Monad[F].composeK(f, g)
 }
 
 trait MonadSyntax {
