@@ -1,7 +1,8 @@
 package glue.data
 
 trait AllFunctions
-  extends ReaderFunctions
+  extends OptionTFunctions
+  with ReaderFunctions
   with StateFunctions
   with WriterFunctions
 
