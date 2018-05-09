@@ -19,8 +19,8 @@ trait OptionImplicits {
   }
 
   implicit val optionIsFoldable: Foldable[Option] = new Foldable[Option] {
-    def foldLeft[A, B](oa: Option[A])(z: B)(f: (B, A) => B): B = oa.map(f(z, _)).getOrElse(z)
-    def foldRight[A, B](oa: Option[A])(z: B)(f: (A, B) => B): B = oa.map(f(_, z)).getOrElse(z)
+    def foldLeft[A, B](oa: Option[A], z: B)(f: (B, A) => B): B = oa.map(f(z, _)).getOrElse(z)
+    def foldRight[A, B](oa: Option[A], z: B)(f: (A, B) => B): B = oa.map(f(_, z)).getOrElse(z)
     def foldMap[A, B](oa: Option[A])(f: A => B)(implicit M: Monoid[B]): B =
       oa.map(a => M.combine(f(a), M.unit)).getOrElse(M.unit)
   }

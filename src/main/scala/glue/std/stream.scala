@@ -7,9 +7,9 @@ object stream extends StreamImplicits
 
 trait StreamImplicits {
   implicit val streamIsFoldable: Foldable[Stream] = new Foldable[Stream] {
-    def foldLeft[A, B](as: Stream[A])(z: B)(f: (B, A) => B): B =
+    def foldLeft[A, B](as: Stream[A], z: B)(f: (B, A) => B): B =
       as.foldLeft(z)(f)
-    def foldRight[A, B](as: Stream[A])(z: B)(f: (A, B) => B): B =
+    def foldRight[A, B](as: Stream[A], z: B)(f: (A, B) => B): B =
       as.foldRight(z)(f)
     def foldMap[A, B](as: Stream[A])(f: A => B)(implicit M: Monoid[B]): B =
       as.foldLeft(M.unit)((b, a) => M.combine(b, f(a)))

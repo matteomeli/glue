@@ -23,9 +23,9 @@ trait IndexedSeqSyntax {
 
 trait IndexedSeqImplicits {
   implicit val indexedSeqIsFoldable: Foldable[IndexedSeq] = new Foldable[IndexedSeq] {
-    def foldLeft[A, B](as: IndexedSeq[A])(z: B)(f: (B, A) => B): B =
+    def foldLeft[A, B](as: IndexedSeq[A], z: B)(f: (B, A) => B): B =
       as.foldLeft(z)(f)
-    def foldRight[A, B](as: IndexedSeq[A])(z: B)(f: (A, B) => B): B =
+    def foldRight[A, B](as: IndexedSeq[A], z: B)(f: (A, B) => B): B =
       as.foldRight(z)(f)
     def foldMap[A, B](as: IndexedSeq[A])(f: A => B)(implicit M: Monoid[B]): B =
       indexedSeq.foldMapB(as)(f)(M)

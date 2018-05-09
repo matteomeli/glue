@@ -19,8 +19,8 @@ trait IdentitySyntax {
 
 trait IdentityImplicits {
   implicit val idIsFoldable: Foldable[Identity] = new Foldable[Identity] {
-    def foldLeft[A, B](ia: Identity[A])(z: B)(f: (B, A) => B): B = f(z, ia.run)
-    def foldRight[A, B](ia: Identity[A])(z: B)(f: (A, B) => B): B = f(ia.run, z)
+    def foldLeft[A, B](ia: Identity[A], z: B)(f: (B, A) => B): B = f(z, ia.run)
+    def foldRight[A, B](ia: Identity[A], z: B)(f: (A, B) => B): B = f(ia.run, z)
     def foldMap[A, B](ia: Identity[A])(f: A => B)(implicit M: Monoid[B]): B = M.combine(M.unit, f(ia.run))
   }
 

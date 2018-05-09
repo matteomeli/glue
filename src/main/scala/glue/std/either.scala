@@ -8,13 +8,13 @@ object either extends EitherImplicits
 trait EitherImplicits {
   implicit def eitherIsFoldable[L]: Foldable[({type f[x] = Either[L, x]})#f] =
     new Foldable[({type f[x] = Either[L, x]})#f] {
-      def foldLeft[A, B](e: Either[L, A])(z: B)(f: (B, A) => B): B = e match {
+      def foldLeft[A, B](e: Either[L, A], z: B)(f: (B, A) => B): B = e match {
         case Left(_) => z
         case Right(a) => f(z, a)
       }
-      def foldRight[A, B](e: Either[L, A])(z: B)(f: (A, B) => B): B = foldLeft(e)(z) { (b, a) => f(a, b) }
+      def foldRight[A, B](e: Either[L, A], z: B)(f: (A, B) => B): B = foldLeft(e, z) { (b, a) => f(a, b) }
       def foldMap[A, B](e: Either[L, A])(f: A => B)(implicit M: Monoid[B]): B =
-        foldLeft(e)(M.unit) { (b, a) => M.combine(b, f(a)) }
+        foldLeft(e, M.unit) { (b, a) => M.combine(b, f(a)) }
     }
 
   implicit def eitherIsMonad[L]: Monad[({type f[x] = Either[L, x]})#f] =
