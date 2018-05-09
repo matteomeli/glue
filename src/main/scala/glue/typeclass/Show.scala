@@ -1,6 +1,5 @@
-package glue.typeclass
-
-import scala.language.implicitConversions
+package glue
+package typeclass
 
 trait Show[A] {
   def show(a: A): String

@@ -1,12 +1,9 @@
-package glue.std
+package glue
+package std
 
 import glue.typeclass.{Applicative, Foldable, Functor, Monad, Monoid, Traverse}
 
-object stream extends StreamFunctions with StreamSyntax with StreamImplicits
-
-trait StreamFunctions {}
-
-trait StreamSyntax {}
+object stream extends StreamImplicits
 
 trait StreamImplicits {
   implicit val streamIsFoldable: Foldable[Stream] = new Foldable[Stream] {

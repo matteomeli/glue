@@ -1,15 +1,14 @@
-package glue.std
+package glue
+package std
 
 import glue.typeclass.{Applicative, Foldable, Functor, Monad, Monoid, Traverse}
 
-object option extends OptionFunctions with OptionSyntax with OptionImplicits
+object option extends OptionFunctions with OptionImplicits
 
 trait OptionFunctions {
   final def some[A](a: A): Option[A] = Some(a)
   final def none[A]: Option[A] = None
 }
-
-trait OptionSyntax {}
 
 trait OptionImplicits {
   import option.{some, none}

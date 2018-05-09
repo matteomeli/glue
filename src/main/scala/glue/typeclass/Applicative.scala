@@ -1,4 +1,5 @@
-package glue.typeclass
+package glue
+package typeclass
 
 trait Applicative[F[_]] { self =>
   val functor: Functor[F]

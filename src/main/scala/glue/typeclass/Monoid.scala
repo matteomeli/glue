@@ -1,4 +1,5 @@
-package glue.typeclass
+package glue
+package typeclass
 
 trait Monoid[A] { self =>
   val unit: A

@@ -1,4 +1,5 @@
-package glue.typeclass
+package glue
+package typeclass
 
 trait Functor[F[_]] { self =>
   def map[A, B](fa: F[A])(f: A => B): F[B]

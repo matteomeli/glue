@@ -1,4 +1,5 @@
-package glue.typeclass
+package glue
+package typeclass
 
 trait Monad[F[_]] { self =>
    val applicative: Applicative[F]

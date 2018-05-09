@@ -1,4 +1,5 @@
-package glue.data
+package glue
+package data
 
 import glue.std.option._
 import glue.typeclass.{Applicative, Functor, Monad}

@@ -1,6 +1,5 @@
-package glue.typeclass
-
-import scala.language.higherKinds
+package glue
+package typeclass
 
 trait Foldable[F[_]] { self =>
   def foldLeft[A, B](as: F[A])(z: B)(f: (B, A) => B): B

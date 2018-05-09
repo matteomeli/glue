@@ -1,4 +1,5 @@
-package glue.typeclass
+package glue
+package typeclass
 
 trait Eq[A] {
   def eqv(x: A, y: A): Boolean

@@ -1,4 +1,5 @@
-package glue.data
+package glue
+package data
 
 import glue.typeclass.{Functor, Show}
 

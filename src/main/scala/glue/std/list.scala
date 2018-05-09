@@ -1,14 +1,13 @@
-package glue.std
+package glue
+package std
 
 import glue.typeclass.{Applicative, Foldable, Functor, Monad, Monoid, Traverse}
 
-object list extends ListFunctions with ListSyntax with ListImplicits
+object list extends ListFunctions with ListImplicits
 
 trait ListFunctions {
   def empty[A]: List[A] = Nil
 }
-
-trait ListSyntax {}
 
 trait ListImplicits {
   import list.empty

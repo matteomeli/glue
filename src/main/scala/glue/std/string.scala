@@ -1,12 +1,9 @@
-package glue.std
+package glue
+package std
 
 import glue.typeclass.Monoid
 
-object string extends StringFunctions with StringSyntax with StringImplicits
-
-trait StringFunctions {}
-
-trait StringSyntax {}
+object string extends StringImplicits
 
 trait StringImplicits {
   implicit val stringIsMonoid: Monoid[String] = new Monoid[String] {

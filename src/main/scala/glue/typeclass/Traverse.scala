@@ -1,4 +1,5 @@
-package glue.typeclass
+package glue
+package typeclass
 
 import glue.data.{Const, Identity, State}
 import glue.data.Identity.implicits._

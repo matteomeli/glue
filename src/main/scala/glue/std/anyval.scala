@@ -1,4 +1,5 @@
-package glue.std
+package glue
+package std
 
 import glue.typeclass.Show
 
