@@ -30,6 +30,8 @@ trait FoldableFunctions {
   def foldLeft[F[_]: Foldable, A, B](fa: F[A], z: B)(f: (B, A) => B): B = Foldable[F].foldLeft(fa, z)(f)
   def foldRight[F[_]: Foldable, A, B](fa: F[A], z: B)(f: (A, B) => B): B = Foldable[F].foldRight(fa, z)(f)
   def foldMap[F[_]: Foldable, A, B: Monoid](fa: F[A])(f: A => B): B = Foldable[F].foldMap(fa)(f)
+  def combine[F[_]: Foldable, A: Monoid](fa: F[A]): A = Foldable[F].combine(fa)
+  def toList[F[_]: Foldable, A](fa: F[A]): List[A] = Foldable[F].toList(fa)
 }
 
 trait FoldableSyntax {
