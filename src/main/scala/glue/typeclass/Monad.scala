@@ -5,15 +5,22 @@ trait Monad[F[_]] { self =>
    val applicative: Applicative[F]
 
   def unit[A](a: => A): F[A] = applicative.unit(a)
-  def pure[A](a: => A): F[A] = unit(a)
 
   def flatMap[A, B](ma: F[A])(f: A => F[B]): F[B]
+
+  // Alias for unit
+  def pure[A](a: => A): F[A] = unit(a)
+
+  // Alias for flatMap
   def bind[A, B](ma: F[A])(f: A => F[B]): F[B] = flatMap(ma)(f)
 
-  // Implement Functor.map through flatMap and unit
+  // Compose two effects discarding the output of the first one
+  def seq[A, B](ma: F[A], mb: F[B]): F[B] = flatMap(ma)(Function.const(mb))
+
+  // Functor.map through flatMap and unit
   def map[A, B](ma: F[A])(f: A => B): F[B] = flatMap(ma)(a => unit(f(a)))
 
-  // Implement Applicative.apply and Applicative.map2 through flatMap and map
+  // Applicative.apply and Applicative.map2 through flatMap and map
   def apply[A, B](mab: F[A => B])(ma: F[A]): F[B] = flatMap(mab)(map(ma)(_))
   def map2[A, B, C](ma: F[A], mb: F[B])(f: (A, B) => C): F[C] = flatMap(ma)(a => map(mb)(b => f(a, b)))
   def product[A, B](ma: F[A], mb: F[B]): F[(A, B)] = map2(ma, mb)((_, _))
@@ -78,9 +85,10 @@ object Monad extends MonadFunctions {
 
 trait MonadFunctions {
   def unit[F[_]: Monad, A](a: => A): F[A] = Monad[F].unit(a)
-  def pure[F[_]: Monad, A](a: => A): F[A] = Monad[F].unit(a)
   def flatMap[F[_]: Monad, A, B](ma: F[A])(f: A => F[B]): F[B] = Monad[F].flatMap(ma)(f)
+  def pure[F[_]: Monad, A](a: => A): F[A] = Monad[F].unit(a)
   def bind[F[_]: Monad, A, B](ma: F[A])(f: A => F[B]): F[B] = Monad[F].bind(ma)(f)
+  def seq[F[_]: Monad, A, B](ma: F[A], mb: F[B]): F[B] = Monad[F].seq(ma, mb)
   def map[F[_]: Monad, A, B](ma: F[A])(f: A => B): F[B] = Monad[F].map(ma)(f)
   def apply[F[_]: Monad, A, B](mab: F[A => B])(ma: F[A]): F[B] = Monad[F].apply(mab)(ma)
   def map2[F[_]: Monad, A, B, C](ma: F[A], mb: F[B])(f: (A, B) => C): F[C] = Monad[F].map2(ma, mb)(f)
@@ -93,6 +101,7 @@ trait MonadSyntax {
   implicit class MonadOps[F[_]: Monad, A](self: F[A]) {
     def flatMap[B](f: A => F[B]): F[B] = Monad[F].flatMap(self)(f)
     def bind[B](f: A => F[B]): F[B] = Monad[F].bind(self)(f)
+    def seq[B](mb: F[B]): F[B] = Monad[F].seq(self, mb)
     def map[B](f: A => B): F[B] = Monad[F].map(self)(f)
     def apply[B, C](mb: F[B])(implicit ev: A <:< B => C): F[C] = {
       import glue.data.Identity.syntax._
