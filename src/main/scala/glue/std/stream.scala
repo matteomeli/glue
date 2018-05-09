@@ -6,7 +6,7 @@ import glue.typeclass.{Applicative, Foldable, Functor, Monad, Monoid, Traverse}
 object stream extends StreamImplicits
 
 trait StreamImplicits {
-  implicit val streamIsFoldable: Foldable[Stream] = new Foldable[Stream] {
+  private implicit lazy val streamIsFoldable: Foldable[Stream] = new Foldable[Stream] {
     def foldLeft[A, B](as: Stream[A], z: B)(f: (B, A) => B): B =
       as.foldLeft(z)(f)
     def foldRight[A, B](as: Stream[A], z: B)(f: (A, B) => B): B =
@@ -15,9 +15,8 @@ trait StreamImplicits {
       as.foldLeft(M.unit)((b, a) => M.combine(b, f(a)))
   }
 
-  implicit val streamIsMonad: Monad[Stream] = new Monad[Stream] {
-    val applicative: Applicative[Stream] = Applicative[Stream]
-    def flatMap[A, B](as: Stream[A])(f: A => Stream[B]): Stream[B] = as flatMap f
+  private implicit lazy val streamIsFunctor: Functor[Stream] = new Functor[Stream] {
+    def map[A, B](as: Stream[A])(f: A => B): Stream[B] = as map f
   }
 
   implicit val streamIsTraversable: Traverse[Stream] = new Traverse[Stream] {
@@ -29,14 +28,20 @@ trait StreamImplicits {
       }
   }
 
-  private implicit def streamIsApplicative: Applicative[Stream] = new Applicative[Stream] {
+  private implicit lazy val streamIsApplicative: Applicative[Stream] = new Applicative[Stream] {
     val functor: Functor[Stream] = Functor[Stream]
     def unit[A](a: => A): Stream[A] = Stream.continually(a)
     def apply[A, B](fs: Stream[A => B])(as: Stream[A]): Stream[B] =
       as zip fs map { case (a, f) => f(a) }
   }
 
-  private implicit def streamIsFunctor: Functor[Stream] = new Functor[Stream] {
-    def map[A, B](as: Stream[A])(f: A => B): Stream[B] = as map f
+  implicit val streamIsMonad: Monad[Stream] = new Monad[Stream] {
+    val applicative: Applicative[Stream] = Applicative[Stream]
+    def flatMap[A, B](as: Stream[A])(f: A => Stream[B]): Stream[B] = as flatMap f
+  }
+
+  implicit def streamIsMonoid[A]: Monoid[Stream[A]] = new Monoid[Stream[A]] {
+    val unit: Stream[A] = Stream.empty
+    def combine(l: Stream[A], r: Stream[A]): Stream[A] = l ++ r
   }
 }

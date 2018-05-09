@@ -12,25 +12,15 @@ trait ListFunctions {
 trait ListImplicits {
   import list.empty
 
-  implicit def listIsMonoid[A]: Monoid[List[A]] = new Monoid[List[A]] {
-    val unit: List[A] = List.empty
-    def combine(l: List[A], r: List[A]): List[A] = l ++ r
-  }
-
-  implicit val listIsFoldable: Foldable[List] = new Foldable[List] {
+  private implicit lazy val listIsFoldable: Foldable[List] = new Foldable[List] {
     def foldLeft[A, B](as: List[A], z: B)(f: (B, A) => B): B = as.foldLeft(z)(f)
     def foldRight[A, B](as: List[A], z: B)(f: (A, B) => B): B = as.foldRight(z)(f)
     def foldMap[A, B](as: List[A])(f: A => B)(implicit M: Monoid[B]): B =
       as.foldLeft(M.unit)((b, a) => M.combine(b, f(a)))
   }
 
-  implicit val listIsMonad: Monad[List] = new Monad[List] {
-    val applicative: Applicative[List] = Applicative[List]
-    def flatMap[A, B](as: List[A])(f: A => List[B]): List[B] = as flatMap f
-    override def map[A, B](as: List[A])(f: A => B): List[B] = as map f
-    override def map2[A, B, C](as: List[A], bs: List[B])(f: (A, B) => C): List[C] =
-      if (bs.isEmpty) Nil
-      else as.flatMap(a => bs.map(b => f(a, b)))
+  private implicit lazy val listIsFunctor: Functor[List] = new Functor[List] {
+    def map[A, B](as: List[A])(f: A => B): List[B] = as map f
   }
 
   implicit val listIsTraversable: Traverse[List] = new Traverse[List] {
@@ -42,7 +32,7 @@ trait ListImplicits {
       }
   }
 
-  private implicit def listIsApplicative: Applicative[List] = new Applicative[List] {
+  private implicit lazy val listIsApplicative: Applicative[List] = new Applicative[List] {
     val functor: Functor[List] = Functor[List]
     def unit[A](a: => A): List[A] = List(a)
     def apply[A, B](f: List[A => B])(as: List[A]): List[B] =
@@ -50,7 +40,17 @@ trait ListImplicits {
       else as flatMap { a => f.map(_(a)) }
   }
 
-  private implicit def listIsFunctor: Functor[List] = new Functor[List] {
-    def map[A, B](as: List[A])(f: A => B): List[B] = as map f
+  implicit val listIsMonad: Monad[List] = new Monad[List] {
+    val applicative: Applicative[List] = Applicative[List]
+    def flatMap[A, B](as: List[A])(f: A => List[B]): List[B] = as flatMap f
+    override def map[A, B](as: List[A])(f: A => B): List[B] = as map f
+    override def map2[A, B, C](as: List[A], bs: List[B])(f: (A, B) => C): List[C] =
+      if (bs.isEmpty) Nil
+      else as.flatMap(a => bs.map(b => f(a, b)))
+  }
+
+  implicit def listIsMonoid[A]: Monoid[List[A]] = new Monoid[List[A]] {
+    val unit: List[A] = List.empty
+    def combine(l: List[A], r: List[A]): List[A] = l ++ r
   }
 }

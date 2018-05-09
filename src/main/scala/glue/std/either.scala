@@ -17,19 +17,6 @@ trait EitherImplicits {
         foldLeft(e, M.unit) { (b, a) => M.combine(b, f(a)) }
     }
 
-  implicit def eitherIsMonad[L]: Monad[({type f[x] = Either[L, x]})#f] =
-    new Monad[({type f[x] = Either[L, x]})#f] {
-      val applicative: Applicative[({type f[x] = Either[L, x]})#f] = Applicative[({type f[x] = Either[L, x]})#f]
-      def flatMap[A, B](e: Either[L, A])(f: A => Either[L, B]): Either[L, B] = e flatMap f
-    }
-
-  private implicit def eitherIsApplicative[L]: Applicative[({type f[x] = Either[L, x]})#f] =
-    new Applicative[({type f[x] = Either[L, x]})#f] {
-      val functor: Functor[({type f[x] = Either[L, x]})#f] = Functor[({type f[x] = Either[L, x]})#f]
-      def unit[A](a: => A): Either[L, A] = Right(a)
-      def apply[A, B](f: Either[L, A => B])(e: Either[L, A]): Either[L, B] = e flatMap { a => f.map(_(a)) }
-    }
-
   private implicit def eitherIsFunctor[L]: Functor[({type f[x] = Either[L, x]})#f] =
     new Functor[({type f[x] = Either[L, x]})#f] {
       def map[A, B](e: Either[L, A])(f: A => B): Either[L, B] = e map f
@@ -41,5 +28,18 @@ trait EitherImplicits {
       val functor: Functor[({type f[x] = Either[L, x]})#f] = Functor[({type f[x] = Either[L, x]})#f]
       def traverse[G[_], A, B](e: Either[L, A])(f: A => G[B])(implicit G: Applicative[G]): G[Either[L, B]] =
         e fold (l => G.unit(Left(l)), a => G.map(f(a))(Right(_)))
+    }
+
+  private implicit def eitherIsApplicative[L]: Applicative[({type f[x] = Either[L, x]})#f] =
+    new Applicative[({type f[x] = Either[L, x]})#f] {
+      val functor: Functor[({type f[x] = Either[L, x]})#f] = Functor[({type f[x] = Either[L, x]})#f]
+      def unit[A](a: => A): Either[L, A] = Right(a)
+      def apply[A, B](f: Either[L, A => B])(e: Either[L, A]): Either[L, B] = e flatMap { a => f.map(_(a)) }
+    }
+
+  implicit def eitherIsMonad[L]: Monad[({type f[x] = Either[L, x]})#f] =
+    new Monad[({type f[x] = Either[L, x]})#f] {
+      val applicative: Applicative[({type f[x] = Either[L, x]})#f] = Applicative[({type f[x] = Either[L, x]})#f]
+      def flatMap[A, B](e: Either[L, A])(f: A => Either[L, B]): Either[L, B] = e flatMap f
     }
 }
