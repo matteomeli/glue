@@ -12,14 +12,14 @@ trait ListFunctions {
 trait ListImplicits {
   import list.empty
 
-  private implicit lazy val listIsFoldable: Foldable[List] = new Foldable[List] {
+  private implicit val listIsFoldable: Foldable[List] = new Foldable[List] {
     def foldLeft[A, B](as: List[A], z: B)(f: (B, A) => B): B = as.foldLeft(z)(f)
     def foldRight[A, B](as: List[A], z: B)(f: (A, B) => B): B = as.foldRight(z)(f)
     def foldMap[A, B](as: List[A])(f: A => B)(implicit M: Monoid[B]): B =
       as.foldLeft(M.unit)((b, a) => M.combine(b, f(a)))
   }
 
-  private implicit lazy val listIsFunctor: Functor[List] = new Functor[List] {
+  private implicit val listIsFunctor: Functor[List] = new Functor[List] {
     def map[A, B](as: List[A])(f: A => B): List[B] = as map f
   }
 
@@ -32,7 +32,7 @@ trait ListImplicits {
       }
   }
 
-  private implicit lazy val listIsApplicative: Applicative[List] = new Applicative[List] {
+  private implicit val listIsApplicative: Applicative[List] = new Applicative[List] {
     val functor: Functor[List] = Functor[List]
     def unit[A](a: => A): List[A] = List(a)
     def apply[A, B](f: List[A => B])(as: List[A]): List[B] =

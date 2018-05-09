@@ -20,7 +20,7 @@ trait OptionImplicits {
       oa.map(a => M.combine(f(a), M.unit)).getOrElse(M.unit)
   }
 
-  private implicit lazy val optionIsFunctor: Functor[Option] = new Functor[Option] {
+  private implicit val optionIsFunctor: Functor[Option] = new Functor[Option] {
     def map[A, B](o: Option[A])(f: A => B): Option[B] = o map f
   }
 
@@ -31,7 +31,7 @@ trait OptionImplicits {
       oa.foldLeft(G.unit(none[B])) { (_, a) => G.map(f(a))(some(_)) }
   }
 
-  private implicit lazy val optionIsApplicative: Applicative[Option] = new Applicative[Option] {
+  private implicit val optionIsApplicative: Applicative[Option] = new Applicative[Option] {
     val functor: Functor[Option] = Functor[Option]
     def unit[A](a: => A): Option[A] = Some(a)
     def apply[A, B](f: Option[A => B])(o: Option[A]): Option[B] = o flatMap { a => f.map(_(a)) }

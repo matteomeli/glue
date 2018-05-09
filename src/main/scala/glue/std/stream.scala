@@ -6,7 +6,7 @@ import glue.typeclass.{Applicative, Foldable, Functor, Monad, Monoid, Traverse}
 object stream extends StreamImplicits
 
 trait StreamImplicits {
-  private implicit lazy val streamIsFoldable: Foldable[Stream] = new Foldable[Stream] {
+  private implicit val streamIsFoldable: Foldable[Stream] = new Foldable[Stream] {
     def foldLeft[A, B](as: Stream[A], z: B)(f: (B, A) => B): B =
       as.foldLeft(z)(f)
     def foldRight[A, B](as: Stream[A], z: B)(f: (A, B) => B): B =
@@ -15,7 +15,7 @@ trait StreamImplicits {
       as.foldLeft(M.unit)((b, a) => M.combine(b, f(a)))
   }
 
-  private implicit lazy val streamIsFunctor: Functor[Stream] = new Functor[Stream] {
+  private implicit val streamIsFunctor: Functor[Stream] = new Functor[Stream] {
     def map[A, B](as: Stream[A])(f: A => B): Stream[B] = as map f
   }
 
@@ -28,7 +28,7 @@ trait StreamImplicits {
       }
   }
 
-  private implicit lazy val streamIsApplicative: Applicative[Stream] = new Applicative[Stream] {
+  private implicit val streamIsApplicative: Applicative[Stream] = new Applicative[Stream] {
     val functor: Functor[Stream] = Functor[Stream]
     def unit[A](a: => A): Stream[A] = Stream.continually(a)
     def apply[A, B](fs: Stream[A => B])(as: Stream[A]): Stream[B] =
