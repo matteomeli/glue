@@ -22,14 +22,14 @@ class FunctorSpec extends WordSpec with Matchers {
       List("hello", "world").fmap(_.length) shouldBe List(5, 5)
     }
 
-    "replaceL" in {
-      some("a").replaceL(1) shouldBe some(1)
-      none[Int].replaceL("x") shouldBe none[Int]
+    "left" in {
+      left(1, some("a")) shouldBe some(1)
+      left("x", none[Int]) shouldBe none[Int]
     }
 
-    "replaceR" in {
-      replaceR(some(1), "a") shouldBe some("a")
-      replaceR(none[String], 1) shouldBe none[String]
+    "right" in {
+      right(some(1), "a") shouldBe some("a")
+      right(none[String], 1) shouldBe none[String]
     }
 
     "as" in {
@@ -47,9 +47,9 @@ class FunctorSpec extends WordSpec with Matchers {
     }
 
     "fcompose" in {
-      some("glue").composeF(len, square) shouldBe some(16)
+      some("glue").mapCompose(len, square) shouldBe some(16)
 
-      List("aaa", "bb", "c").composeF(len, identity[Int]) shouldBe List(3, 2, 1)
+      List("aaa", "bb", "c").mapCompose(len, identity[Int]) shouldBe List(3, 2, 1)
     }
 
     "pair" in {
@@ -57,12 +57,12 @@ class FunctorSpec extends WordSpec with Matchers {
     }
 
     "fpair" in {
-      some(2).pairF(square) shouldBe some((2, 4))
-      List("aaa", "bb", "c").pairF(len).toMap shouldBe Map("aaa" -> 3, "bb" -> 2, "c" -> 1)
+      some(2).pairWith(square) shouldBe some((2, 4))
+      List("aaa", "bb", "c").pairWith(len).toMap shouldBe Map("aaa" -> 3, "bb" -> 2, "c" -> 1)
     }
 
     "strengthL" in {
-      List(1, 2, 3).strengthL("a") shouldBe List("a" -> 1, "a" -> 2, "a" -> 3)
+      strengthL("a", List(1, 2, 3)) shouldBe List("a" -> 1, "a" -> 2, "a" -> 3)
     }
 
     "strengthR" in {
