@@ -79,6 +79,12 @@ trait Traverse[F[_]] { self =>
 
   def zipL[A, B](fa: F[A], fb: F[B]): F[(A, Option[B])] = zipWithL(fa, fb)((_, _))
   def zipR[A, B](fa: F[A], fb: F[B]): F[(Option[A], B)] = zipWithR(fa, fb)((_, _))
+
+  def mapM[M[_]: Monad, A, B](fa: F[A])(f: A => M[B]): M[F[B]] =
+    traverse(fa)(f)(Monad[M].applicative)
+
+  // A synonym for traverse
+  def forA[G[_]: Applicative, A, B](fa: F[A])(f: A => G[B]): G[F[B]] = traverse(fa)(f)
 }
 
 object Traverse extends TraverseFunctions {
@@ -95,6 +101,17 @@ trait TraverseFunctions {
   def fuse[F[_]: Traverse, G[_], H[_], A, B](fa: F[A])(f: A => G[B], g: A => H[B])(implicit G: Applicative[G], H: Applicative[H]): (G[F[B]], H[F[B]]) =
     Traverse[F].fuse(fa)(f, g)
   def traverseS[F[_]: Traverse, S, A, B](fa: F[A])(f: A => State[S, B]): State[S, F[B]] = Traverse[F].traverseS(fa)(f)
+  def zipWithIndex[F[_]: Traverse, A](fa: F[A]): F[(A, Int)] = Traverse[F].zipWithIndex(fa)
+  def toList[F[_]: Traverse, A](fa: F[A]): List[A] = Traverse[F].toList(fa)
+  def mapAccum[F[_]: Traverse, S, A, B](fa: F[A], s: S)(f: (S, A) => (S, B)): (S, F[B]) = Traverse[F].mapAccum(fa, s)(f)
+  def reverse[F[_]: Traverse, A](fa: F[A]): F[A] = Traverse[F].reverse(fa)
+  def zipWith[F[_]: Traverse, A, B, C](fa: F[A], fb: F[B])(f: (A, Option[B]) => C): (List[B], F[C]) = Traverse[F].zipWith(fa, fb)(f)
+  def zipWithL[F[_]: Traverse, A, B, C](fa: F[A], fb: F[B])(f: (A, Option[B]) => C): F[C] = Traverse[F].zipWithL(fa, fb)(f)
+  def zipWithR[F[_]: Traverse, A, B, C](fa: F[A], fb: F[B])(f: (Option[A], B) => C): F[C] = Traverse[F].zipWithR(fa, fb)(f)
+  def zipL[F[_]: Traverse, A, B](fa: F[A], fb: F[B]): F[(A, Option[B])] = Traverse[F].zipL(fa, fb)
+  def zipR[F[_]: Traverse, A, B](fa: F[A], fb: F[B]): F[(Option[A], B)] = Traverse[F].zipR(fa, fb)
+  def mapM[F[_]: Traverse, M[_]: Monad, A, B](fa: F[A])(f: A => M[B]): M[F[B]] = Traverse[F].mapM(fa)(f)
+  def forA[F[_]: Traverse, G[_]: Applicative, A, B](fa: F[A])(f: A => G[B]): G[F[B]] = Traverse[F].forA(fa)(f)
 }
 
 trait TraverseSyntax {
@@ -108,6 +125,18 @@ trait TraverseSyntax {
     def map[B](f: A => B): F[B] = Traverse[F].map(self)(f)
     def foldMap[B](f: A => B)(implicit M: Monoid[B]): B = Traverse[F].foldMap(self)(f)
     def fuse[G[_], H[_], B](f: A => G[B], g: A => H[B])(implicit G: Applicative[G], H: Applicative[H]): (G[F[B]], H[F[B]]) = Traverse[F].fuse(self)(f, g)
+    def traverseS[S, B](f: A => State[S, B]): State[S, F[B]] = Traverse[F].traverseS(self)(f)
+    def zipWithIndex: F[(A, Int)] = Traverse[F].zipWithIndex(self)
+    def toList: List[A] = Traverse[F].toList(self)
+    def mapAccum[S, B](s: S)(f: (S, A) => (S, B)): (S, F[B]) = Traverse[F].mapAccum(self, s)(f)
+    def reverse: F[A] = Traverse[F].reverse(self)
+    def zipWith[B, C](fb: F[B])(f: (A, Option[B]) => C): (List[B], F[C]) = Traverse[F].zipWith(self, fb)(f)
+    def zipWithL[B, C](fb: F[B])(f: (A, Option[B]) => C): F[C] = Traverse[F].zipWithL(self, fb)(f)
+    def zipWithR[B, C](fb: F[B])(f: (Option[A], B) => C): F[C] = Traverse[F].zipWithR(self, fb)(f)
+    def zipL[B](fb: F[B]): F[(A, Option[B])] = Traverse[F].zipL(self, fb)
+    def zipR[B](fb: F[B]): F[(Option[A], B)] = Traverse[F].zipR(self, fb)
+    def mapM[M[_]: Monad, B](f: A => M[B]): M[F[B]] = Traverse[F].mapM(self)(f)
+    def forA[G[_]: Applicative, B](f: A => G[B]): G[F[B]] = Traverse[F].forA(self)(f)
   }
 }
 

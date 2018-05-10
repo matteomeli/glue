@@ -70,7 +70,7 @@ trait Monad[F[_]] { self =>
   def foreachM[A](l: Stream[A])(f: A => F[Unit]): F[Unit] =
     foldM_(l)(()) { (_, a) => skip(f(a)) }
 
-  // This is so we can have for { ... } syntax in trait's functions
+  // This is so we have access to Monad syntax in trait's functions
   import Monad.syntax._
   implicit def toMonaadic[A](fa: F[A]): MonadOps[F, A] = new MonadOps[F, A](fa)(this)
 }
