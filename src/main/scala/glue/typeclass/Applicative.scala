@@ -22,8 +22,6 @@ trait Applicative[F[_]] { self =>
     apply(apply(apply(apply(unit(f.curried))(fa))(fb))(fc))(fd)
 
   def product[A, B](fa: F[A], fb: F[B]): F[(A, B)] = map2(fa, fb)((_, _))
-  def replicateM[A](n: Int, fa: F[A]): F[List[A]] =
-    (List.fill(n)(fa)).foldRight(unit(List[A]()))((fa, l) => map2(fa, l)(_ :: _))
 
   // The composition of two applicative functors F anf G is a functor of type F[G[x]] for any type x.
   def compose[G[_]](implicit G: Applicative[G]): Applicative[({type f[x] = F[G[x]]})#f] =
@@ -42,6 +40,11 @@ trait Applicative[F[_]] { self =>
       def apply[A, B](fgf: (F[A => B], G[A => B]))(fga: (F[A], G[A])): (F[B], G[B]) =
         (self.apply(fgf._1)(fga._1), G.apply(fgf._2)(fga._2))
     }
+
+  def replicateM[A](n: Int, fa: F[A]): F[List[A]] =
+    (List.fill(n)(fa)).foldRight(unit(List[A]()))((fa, l) => map2(fa, l)(_ :: _))
+  def seqRight[A, B](fa: F[A], fb: F[B]): F[B] = apply(functor.left(identity[B] _, fa))(fb)
+  def seqLeft[A, B](fa: F[A], fb: F[B]): F[A] = map2(fa, fb)((a, b) => Function.const(a)(b))
 }
 
 object Applicative extends ApplicativeFunctions {
@@ -64,8 +67,11 @@ trait ApplicativeFunctions {
     Applicative[F].map4(fa, fb, fc, fd)(f)
 
   def product[F[_]: Applicative, A, B](fa: F[A], fb: F[B]): F[(A, B)] = Applicative[F].product(fa, fb)
+
   def replicateM[F[_]: Applicative, A](n: Int, fa: F[A]): F[List[A]] =
     Applicative[F].replicateM(n, fa)
+  def seqRight[F[_]: Applicative, A, B](fa: F[A], fb: F[B]): F[B] = Applicative[F].seqRight(fa, fb)
+  def seqLeft[F[_]: Applicative, A, B](fa: F[A], fb: F[B]): F[A] = Applicative[F].seqLeft(fa, fb)
 }
 
 trait ApplicativeSyntax {
@@ -93,6 +99,8 @@ trait ApplicativeSyntax {
 
     def product[B](fb: F[B]): F[(A, B)] = Applicative[F].product(self, fb)
     def replicateM(n: Int): F[List[A]] = Applicative[F].replicateM(n, self)
+
+    def seqRight[B](fb: F[B]): F[B] = Applicative[F].seqRight(self, fb)
   }
 }
 
