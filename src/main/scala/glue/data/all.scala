@@ -2,7 +2,8 @@ package glue
 package data
 
 trait AllFunctions
-  extends OptionTFunctions
+  extends IdTFunctions
+  with OptionTFunctions
   with ReaderFunctions
   with StateFunctions
   with WriterFunctions
@@ -13,6 +14,7 @@ trait AllSyntax
 trait AllImplicits
   extends ConstImplicits
   with IdentityImplicits
+  with IdTImplicits
   with OptionTImplicits
   with ReaderImplicits
   with StateImplicits
