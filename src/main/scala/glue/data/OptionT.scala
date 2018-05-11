@@ -2,15 +2,13 @@ package glue
 package data
 
 import glue.std.option._
-import glue.typeclass.{Applicative, Functor, Monad}
-import glue.NaturalTransformation
 
 case class OptionT[F[_], A](run: F[Option[A]]) {
   def map[B](f: A => B)(implicit F: Functor[F]): OptionT[F, B] = OptionT(F.map(run)(_.map(f)))
 
   def mapT[G[_], B](f: F[Option[A]] => G[Option[B]]): OptionT[G, B] = OptionT(f(run))
 
-  def mapN[G[_]](t: NaturalTransformation[F, G]): OptionT[G, A] = OptionT(t(run))
+  def mapK[G[_]](k: NaturalTransformation[F, G]): OptionT[G, A] = OptionT(k(run))
 
   def mapF[B](f: A => F[B])(implicit F: Monad[F]): OptionT[F, B] = OptionT {
     F.flatMap(run) {
@@ -39,6 +37,18 @@ case class OptionT[F[_], A](run: F[Option[A]]) {
       case Some(f) => F.map(run)(_ map f)
     }
   }
+
+  def foldLeft[B](z: B)(f: (B, A) => B)(implicit F: Foldable[F]): B =
+    F.compose(optionIsTraversable.foldable).foldLeft(run, z)(f)
+
+  def foldRight[B](z: B)(f: (A, B) => B)(implicit F: Foldable[F]): B =
+    F.compose(optionIsTraversable.foldable).foldRight(run, z)(f)
+
+  def foldMap[B](f: A => B)(implicit F: Foldable[F], M: Monoid[B]): B =
+    F.compose(optionIsTraversable.foldable).foldMap(run)(f)
+
+  def traverse[G[_]: Applicative, B](f: A => G[B])(implicit T: Traverse[F]): G[OptionT[F, B]] =
+    Applicative[G].map(T.compose(Traverse[Option]).traverse(run)(f))(OptionT(_))
 }
 
 object OptionT extends OptionTFunctions {
@@ -56,10 +66,10 @@ trait OptionTFunctions {
 }
 
 trait OptionTImplicits {
-  implicit def optionTIsMonad[F[_]: Monad]: Monad[({type f[x] = OptionT[F, x]})#f] =
+  implicit def optionTIsMonad[F[_]: Monad: Functor]: Monad[({type f[x] = OptionT[F, x]})#f] =
     new Monad[({type f[x] = OptionT[F, x]})#f] {
       val applicative: Applicative[({type f[x] = OptionT[F, x]})#f] = new Applicative[({type f[x] = OptionT[F, x]})#f] {
-        val functor: Functor[({type f[x] = OptionT[F, x]})#f] = optionTIsFunctor(Monad[F].applicative.functor)
+        val functor: Functor[({type f[x] = OptionT[F, x]})#f] = Functor[({type f[x] = OptionT[F, x]})#f]
         def unit[A](a: => A): OptionT[F, A] = OptionT(Monad[F].unit(some(a)))
         def apply[A, B](of: OptionT[F, A => B])(oa: OptionT[F, A]): OptionT[F, B] = oa.apply(of)
       }
