@@ -55,13 +55,13 @@ trait IdentityImplicits {
 
   private implicit def identityIsApplicative: Applicative[Identity] = new Applicative[Identity] {
     val functor: Functor[Identity] = Functor[Identity]
-    def unit[A](a: => A): Identity[A] = Identity(a)
+    def pure[A](a: => A): Identity[A] = Identity(a)
     def apply[A, B](f: Identity[A => B])(fa: Identity[A]): Identity[B] = Identity(f.run(fa.run))
   }
 
   private implicit def idIsApplicative: Applicative[Id] = new Applicative[Id] {
     val functor: Functor[Id] = Functor[Id]
-    def unit[A](a: => A): Id[A] = a
+    def pure[A](a: => A): Id[A] = a
     def apply[A, B](f: Id[A => B])(a: Id[A]): Id[B] = f(a)
   }
 

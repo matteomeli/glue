@@ -4,12 +4,11 @@ package typeclass
 trait Monad[F[_]] { self =>
   val applicative: Applicative[F]
 
-  def unit[A](a: => A): F[A] = applicative.unit(a)
-
   def flatMap[A, B](ma: F[A])(f: A => F[B]): F[B]
 
-  // Alias for unit
-  def pure[A](a: => A): F[A] = unit(a)
+  def unit[A](a: => A): F[A] = pure(a)
+  def pure[A](a: => A): F[A] = applicative.pure(a)
+  def return_[A](a: => A): F[A] = unit(a)
 
   // Alias for flatMap
   def bind[A, B](ma: F[A])(f: A => F[B]): F[B] = flatMap(ma)(f)
@@ -84,7 +83,6 @@ object Monad extends MonadFunctions {
 trait MonadFunctions {
   def unit[F[_]: Monad, A](a: => A): F[A] = Monad[F].unit(a)
   def flatMap[F[_]: Monad, A, B](ma: F[A])(f: A => F[B]): F[B] = Monad[F].flatMap(ma)(f)
-  def pure[F[_]: Monad, A](a: => A): F[A] = Monad[F].unit(a)
   def bind[F[_]: Monad, A, B](ma: F[A])(f: A => F[B]): F[B] = Monad[F].bind(ma)(f)
   def seq[F[_]: Monad, A, B](ma: F[A], mb: F[B]): F[B] = Monad[F].seq(ma, mb)
   def map[F[_]: Monad, A, B](ma: F[A])(f: A => B): F[B] = Monad[F].map(ma)(f)

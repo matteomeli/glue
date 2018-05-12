@@ -22,10 +22,10 @@ trait Foldable[F[_]] { self =>
     }
 
   def foldRightM[G[_], A, B](fa: F[A], z: B)(f: (A, B) => G[B])(implicit G: Monad[G]): G[B] =
-    foldLeft[A, B => G[B]](fa, G.unit(_))((g, a) => b => G.flatMap(f(a, b))(g))(z)  // foldRight(fa, G.unit(z))((a, fb) => G.flatMap(fb)(b => f(a, b)))
+    foldLeft[A, B => G[B]](fa, G.pure(_))((g, a) => b => G.flatMap(f(a, b))(g))(z)  // foldRight(fa, G.pure(z))((a, fb) => G.flatMap(fb)(b => f(a, b)))
 
   def foldLeftM[G[_], A, B](fa: F[A], z: B)(f: (B, A) => G[B])(implicit G: Monad[G]): G[B] =
-    foldRight[A, B => G[B]](fa, G.unit(_))((a, g) => b => G.flatMap(f(b, a))(g))(z) // foldLeft(fa, G.unit(z))((fb, a) => G.flatMap(fb)(b => f(b, a)))
+    foldRight[A, B => G[B]](fa, G.pure(_))((a, g) => b => G.flatMap(f(b, a))(g))(z) // foldLeft(fa, G.pure(z))((fb, a) => G.flatMap(fb)(b => f(b, a)))
 
   def foldMapM[G[_], A, B](fa: F[A])(f: A => G[B])(implicit M: Monoid[B], G: Monad[G]): G[B] =
     foldLeftM(fa, M.unit)((b1, a) => G.map(f(a))(b2 => M.combine(b1, b2)))
@@ -37,12 +37,12 @@ trait Foldable[F[_]] { self =>
   def foldOpt[A: Monoid](fa: F[A]): Option[A] = foldMapOpt(fa)(identity)
 
   def traverseA_[G[_], A, B](fa: F[A])(f: A => G[B])(implicit G: Applicative[G]): G[Unit] =
-    foldRight(fa, G.unit(()))((a, gu) => G.seqRight(f(a), gu))
+    foldRight(fa, G.pure(()))((a, gu) => G.seqRight(f(a), gu))
 
   def forA_[G[_], A, B](fa: F[A])(f: A => G[B])(implicit G: Applicative[G]): G[Unit] = traverseA_(fa)(f)
 
   def mapM_[G[_], A, B](fa: F[A])(f: A => G[B])(implicit G: Monad[G]): G[Unit] =
-    foldRight(fa, G.unit(())) { (a, gu) => G.seq(f(a), gu) }
+    foldRight(fa, G.pure(())) { (a, gu) => G.seq(f(a), gu) }
 
   def sequenceA_[G[_], A](fga: F[G[A]])(implicit G: Applicative[G]): G[Unit] =
     traverseA_(fga)(identity)

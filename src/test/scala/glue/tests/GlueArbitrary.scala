@@ -16,7 +16,7 @@ object GlueArbitrary {
     val functor: Functor[Arbitrary] = new Functor[Arbitrary] {
       def map[A, B](fa: Arbitrary[A])(f: A => B): Arbitrary[B] = Arbitrary(fa.arbitrary map f)
     }
-    def unit[A](a: => A): Arbitrary[A] = Arbitrary(const(a))
+    def pure[A](a: => A): Arbitrary[A] = Arbitrary(const(a))
     def apply[A, B](f: Arbitrary[A => B])(fa: Arbitrary[A]): Arbitrary[B] = Arbitrary(fa.arbitrary flatMap {
       a => f.arbitrary.map(_(a))
     })

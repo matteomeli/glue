@@ -21,7 +21,7 @@ trait Traverse[F[_]] { self =>
 
   // Traversing with the Identity applicative is equivalent to Functor.map
   def map[A, B](fa: F[A])(f: A => B): F[B] =
-    traverse(fa)(a => Monad[Identity].applicative.unit(f(a)))(Monad[Identity].applicative).run
+    traverse(fa)(a => Monad[Identity].applicative.pure(f(a)))(Monad[Identity].applicative).run
 
   // Traversing with Const applicative is quivalent to Foldable.foldMap
   def foldMap[A, M](fa: F[A])(f: A => M)(implicit M: Monoid[M]): M =
@@ -155,7 +155,7 @@ trait TraverseLaws[F[_]] {
   }
 
   def purity[G[_], A](fa: F[A])(implicit G: Applicative[G]): Boolean =
-    traversable.traverse(fa)(G.unit(_)) == G.unit(fa)
+    traversable.traverse(fa)(G.pure(_)) == G.pure(fa)
 
   def naturality[G[_], H[_], A, B](t: NaturalTransformation[G, H])(fa: F[A], f: A => G[B])(implicit G: Applicative[G], H: Applicative[H]): Boolean = {
     t(traversable.traverse(fa)(f)) == traversable.traverse(fa)(a => t(f(a)))

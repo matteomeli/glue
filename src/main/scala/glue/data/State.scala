@@ -49,7 +49,7 @@ trait StateImplicits {
 
   private implicit def stateIsApplicative[S]: Applicative[({type f[x] = State[S, x]})#f] = new Applicative[({type f[x] = State[S, x]})#f] {
     val functor: Functor[({type f[x] = State[S, x]})#f] = Functor[({type f[x] = State[S, x]})#f]
-    def unit[A](a: => A): State[S, A] = State.init(a)
+    def pure[A](a: => A): State[S, A] = State.init(a)
     def apply[A, B](fs: State[S, A => B])(sa: State[S, A]): State[S, B] = for {
       a <- sa
       f <- fs

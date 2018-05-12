@@ -4,22 +4,22 @@ package typeclass
 trait Applicative[F[_]] { self =>
   val functor: Functor[F]
 
-  def unit[A](a: => A): F[A]
+  def pure[A](a: => A): F[A]
   def apply[A, B](f: F[A => B])(fa: F[A]): F[B]
 
-  def point[A](a: => A): F[A] = unit(a)
-  def pure[A](a: => A): F[A] = unit(a)
+  // Synonym for pure
+  def point[A](a: => A): F[A] = pure(a)
 
-  def unit: F[Unit] = unit(())
+  def unit: F[Unit] = pure(())
 
-  def map[A, B](fa: F[A])(f: A => B): F[B] = apply(unit(f))(fa)
+  def map[A, B](fa: F[A])(f: A => B): F[B] = apply(pure(f))(fa)
   def map2[A, B, C](fa: F[A], fb: F[B])(f: (A, B) => C): F[C] =
-    apply(apply(unit(f.curried))(fa))(fb)
+    apply(apply(pure(f.curried))(fa))(fb)
 
   def map3[A, B, C, D](fa: F[A], fb: F[B], fc: F[C])(f: (A, B, C) => D): F[D] =
-    apply(apply(apply(unit(f.curried))(fa))(fb))(fc)
+    apply(apply(apply(pure(f.curried))(fa))(fb))(fc)
   def map4[A, B, C, D, E](fa: F[A], fb: F[B], fc: F[C], fd: F[D])(f: (A, B, C, D) => E): F[E] =
-    apply(apply(apply(apply(unit(f.curried))(fa))(fb))(fc))(fd)
+    apply(apply(apply(apply(pure(f.curried))(fa))(fb))(fc))(fd)
 
   def product[A, B](fa: F[A], fb: F[B]): F[(A, B)] = map2(fa, fb)((_, _))
 
@@ -27,7 +27,7 @@ trait Applicative[F[_]] { self =>
   def compose[G[_]](implicit G: Applicative[G]): Applicative[({type f[x] = F[G[x]]})#f] =
     new Applicative[({type f[x] = F[G[x]]})#f] {
       val functor: Functor[({type f[x] = F[G[x]]})#f] = self.functor compose G.functor
-      def unit[A](a: => A): F[G[A]] = self.unit(G.unit(a))
+      def pure[A](a: => A): F[G[A]] = self.pure(G.pure(a))
       def apply[A, B](fgf: F[G[A => B]])(fga: F[G[A]]): F[G[B]] =
         self.map2(fgf, fga) { case (gf, ga) => G.apply(gf)(ga) }
     }
@@ -36,13 +36,13 @@ trait Applicative[F[_]] { self =>
   def product[G[_]](implicit G: Applicative[G]): Applicative[({type f[x] = (F[x], G[x])})#f] =
     new Applicative[({type f[x] = (F[x], G[x])})#f] {
       val functor: Functor[({type f[x] = (F[x], G[x])})#f] = self.functor product G.functor
-      def unit[A](a: => A): (F[A], G[A]) = (self.unit(a), G.unit(a))
+      def pure[A](a: => A): (F[A], G[A]) = (self.pure(a), G.pure(a))
       def apply[A, B](fgf: (F[A => B], G[A => B]))(fga: (F[A], G[A])): (F[B], G[B]) =
         (self.apply(fgf._1)(fga._1), G.apply(fgf._2)(fga._2))
     }
 
   def replicateM[A](n: Int, fa: F[A]): F[List[A]] =
-    (List.fill(n)(fa)).foldRight(unit(List[A]()))((fa, l) => map2(fa, l)(_ :: _))
+    (List.fill(n)(fa)).foldRight(pure(List[A]()))((fa, l) => map2(fa, l)(_ :: _))
   def seqRight[A, B](fa: F[A], fb: F[B]): F[B] = apply(functor.left(identity[B] _, fa))(fb)
   def seqLeft[A, B](fa: F[A], fb: F[B]): F[A] = map2(fa, fb)((a, b) => Function.const(a)(b))
 }
@@ -54,7 +54,7 @@ object Applicative extends ApplicativeFunctions {
 }
 
 trait ApplicativeFunctions {
-  def unit[F[_]: Applicative, A](a: A): F[A] = Applicative[F].unit(a)
+  def pure[F[_]: Applicative, A](a: A): F[A] = Applicative[F].pure(a)
   def apply[F[_]: Applicative, A, B](f: F[A => B])(fa: F[A]): F[B] = Applicative[F].apply(f)(fa)
 
   def map[F[_]: Applicative, A, B](fa: F[A])(f: A => B): F[B] = Applicative[F].map(fa)(f)
@@ -110,21 +110,21 @@ trait ApplicativeLaws[F[_]] {
   import Applicative._
   import Applicative.syntax._
 
-  def leftIdentity[A](fa: F[A]): Boolean = map2(unit(()), fa)((_, a) => a) == fa
-  def rightIdentity[A](fa: F[A]): Boolean = map2(fa, unit(()))((a, _) => a) == fa
+  def leftIdentity[A](fa: F[A]): Boolean = map2(pure(()), fa)((_, a) => a) == fa
+  def rightIdentity[A](fa: F[A]): Boolean = map2(fa, pure(()))((a, _) => a) == fa
   def associativity[A, B, C](fa: F[A], fb: F[B], fc: F[C]): Boolean = {
     def reassoc(p: (A, (B, C))): ((A, B), C) = p match { case (a, (b, c)) => ((a, b), c)}
     product(product(fa, fb), fc) == map(product(fa, product(fb, fc)))(reassoc)
   }
-  def homomorphism[A, B](a: A, f: A => B): Boolean = unit(a).apply(unit(f)) == unit(f(a))
+  def homomorphism[A, B](a: A, f: A => B): Boolean = pure(a).apply(pure(f)) == pure(f(a))
   def interchange[A, B](a: A, ff: F[A => B]): Boolean =
-    apply(ff)(unit(a)) == apply(unit((f: A => B) => f(a)))(ff)
+    apply(ff)(pure(a)) == apply(pure((f: A => B) => f(a)))(ff)
   def composition[A, B, C](fa: F[A], fab: F[A => B], fbc: F[B => C]): Boolean = {
     val compose: (A => B) => (B => C) => (A => C) = _.andThen
-    unit(compose).apply(fab).apply(fbc).apply(fa) == fbc.apply(fab.apply(fa))
+    pure(compose).apply(fab).apply(fbc).apply(fa) == fbc.apply(fab.apply(fa))
   }
   def applicativeMap[A, B](fa: F[A], f: A => B): Boolean =
-    fa.map(f) == fa.apply(unit(f))
+    fa.map(f) == fa.apply(pure(f))
   def naturality[A, B, C, D](fa: F[A], fb: F[C], f: A => B, g: C => D): Boolean = {
     def pair(f: A => B, g: C => D): (A, C) => (B, D) = (a, c) => (f(a), g(c))
     map2(fa, fb)(pair(f, g)) == product(map(fa)(f), map(fb)(g))

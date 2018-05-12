@@ -34,7 +34,7 @@ trait ReaderImplicits {
 
   private implicit def readerIsApplicative[R]: Applicative[({type f[x] = Reader[R, x]})#f] = new Applicative[({type f[x] = Reader[R, x]})#f] {
     val functor: Functor[({type f[x] = Reader[R, x]})#f] = Functor[({type f[x] = Reader[R, x]})#f]
-    def unit[A](a: => A): Reader[R, A] = Reader(_ => a)
+    def pure[A](a: => A): Reader[R, A] = Reader(_ => a)
     def apply[A, B](rf: Reader[R, A => B])(ra: Reader[R, A]): Reader[R, B] = Reader { r =>
       val a = ra.run(r)
       val f = rf.run(r)

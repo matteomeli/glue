@@ -27,14 +27,14 @@ trait ListImplicits {
     val foldable: Foldable[List] = Foldable[List]
     val functor: Functor[List] = Functor[List]
     def traverse[G[_], A, B](as: List[A])(f: A => G[B])(implicit G: Applicative[G]): G[List[B]] =
-      as.foldLeft(G.unit(empty[B])) { (gl, a) =>
+      as.foldLeft(G.pure(empty[B])) { (gl, a) =>
         G.map2(gl, f(a)) { (l, b) => b :: l }
       }
   }
 
   private implicit val listIsApplicative: Applicative[List] = new Applicative[List] {
     val functor: Functor[List] = Functor[List]
-    def unit[A](a: => A): List[A] = List(a)
+    def pure[A](a: => A): List[A] = List(a)
     def apply[A, B](f: List[A => B])(as: List[A]): List[B] =
       if (f.isEmpty) Nil
       else as flatMap { a => f.map(_(a)) }

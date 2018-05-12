@@ -48,7 +48,7 @@ trait IdTImplicits {
   private implicit def idTIsApplicative[F[_]: Applicative: Functor]: Applicative[({type f[x] = IdT[F, x]})#f] =
     new Applicative[({type f[x] = IdT[F, x]})#f] {
       val functor: Functor[({type f[x] = IdT[F, x]})#f] = Functor[({type f[x] = IdT[F, x]})#f]
-      def unit[A](a: => A): IdT[F, A] = IdT(Applicative[F].unit(a))
+      def pure[A](a: => A): IdT[F, A] = IdT(Applicative[F].pure(a))
       def apply[A, B](ff: IdT[F, A => B])(fa: IdT[F,A]): IdT[F, B] = fa apply ff
     }
 

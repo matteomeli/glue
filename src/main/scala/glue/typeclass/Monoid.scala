@@ -58,7 +58,7 @@ trait MonoidImplicits {
   implicit def monoidIsApplicative[M: Monoid]: Applicative[({type f[x] = Const[M, x]})#f] =
     new Applicative[({type f[x] = Const[M, x]})#f] {
       val functor: Functor[({type f[x] = Const[M, x]})#f] = Functor[({type f[x] = Const[M, x]})#f]
-      def unit[A](a: => A): Const[M, A] = Const(Monoid[M].unit)
+      def pure[A](a: => A): Const[M, A] = Const(Monoid[M].unit)
       def apply[A, B](f: Const[M, A => B])(fa: Const[M, A]): Const[M, B] =
         Const(Monoid[M].combine(f.run, fa.run))
     }

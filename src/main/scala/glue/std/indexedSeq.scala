@@ -6,12 +6,12 @@ import glue.typeclass.{Applicative, Foldable, Functor, Monoid}
 object indexedSeq extends IndexedSeqFunctions with IndexedSeqSyntax with IndexedSeqImplicits
 
 trait IndexedSeqFunctions {
-  def foldMapB[A, B](as: IndexedSeq[A])(f: A => B)(mb: Monoid[B]): B =
-    if (as.length == 0) mb.unit
+  def foldMapB[A, B](as: IndexedSeq[A])(f: A => B)(implicit M: Monoid[B]): B =
+    if (as.length == 0) M.unit
     else if (as.length == 1) f(as(0))
     else {
       val (left, right) = as.splitAt(as.length / 2)
-      mb.combine(foldMapB(left)(f)(mb), foldMapB(right)(f)(mb))
+      M.combine(foldMapB(left)(f), foldMapB(right)(f))
     }
 }
 
@@ -37,7 +37,7 @@ trait IndexedSeqImplicits {
 
   implicit val indexedSeqIsApplicative: Applicative[IndexedSeq] = new Applicative[IndexedSeq] {
     val functor: Functor[IndexedSeq] = Functor[IndexedSeq]
-    def unit[A](a: => A): IndexedSeq[A] = IndexedSeq(a)
+    def pure[A](a: => A): IndexedSeq[A] = IndexedSeq(a)
     def apply[A, B](f: IndexedSeq[A => B])(as: IndexedSeq[A]): IndexedSeq[B] = as flatMap { a => f.map(_(a)) }
   }
 }
