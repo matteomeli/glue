@@ -56,6 +56,37 @@ case class OptionT[F[_], A](run: F[Option[A]]) {
 
   def traverse[G[_]: Applicative, B](f: A => G[B])(implicit T: Traverse[F]): G[OptionT[F, B]] =
     Applicative[G].map(T.compose(Traverse[Option]).traverse(run)(f))(OptionT(_))
+
+  def isEmpty(implicit F: Functor[F]): F[Boolean] = F.map(run)(_.isEmpty)
+
+  def isDefined(implicit F: Functor[F]): F[Boolean] = isEmpty
+
+  def nonEmpty(implicit F: Functor[F]): F[Boolean] = F.map(run)(_.nonEmpty)
+
+  def exists(p: A => Boolean)(implicit F: Functor[F]): F[Boolean] = F.map(run)(_.exists(p))
+
+  def filter(p: A => Boolean)(implicit F: Functor[F]): OptionT[F, A] = OptionT(F.map(run)(_.filter(p)))
+
+  def filterNot(p: A => Boolean)(implicit F: Functor[F]): OptionT[F, A] = OptionT(F.map(run)(_.filterNot(p)))
+
+  def fold[B](z: => B)(f: A => B)(implicit F: Functor[F]): F[B] = F.map(run)(_.fold(z)(f))
+
+  def forall(p: A => Boolean)(implicit F: Functor[F]): F[Boolean] = F.map(run)(_.forall(p))
+
+  def getOrElse[B >: A](z: => B)(implicit F: Functor[F]): F[B] = F.map(run)(_.getOrElse(z))
+
+  def getOrElseF[B >: A](z: => F[B])(implicit F: Monad[F]): F[B] = F.flatMap(run)(_.fold(z)(F.unit(_)))
+
+  def orElse[B >: A](z: => Option[B])(implicit F: Functor[F]): OptionT[F, B] = OptionT(F.map(run)(_ orElse z))
+
+  def orElseF(z: => F[Option[A]])(implicit F: Monad[F]): OptionT[F, A] = OptionT {
+    F.flatMap(run) {
+      case None => z
+      case s @ Some(_) => F.unit(s)
+    }
+  }
+
+  def orElse(z: => OptionT[F, A])(implicit F: Monad[F]): OptionT[F, A] = this orElseF z.run
 }
 
 object OptionT extends OptionTFunctions {
