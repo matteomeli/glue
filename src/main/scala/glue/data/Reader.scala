@@ -19,7 +19,7 @@ object Reader extends ReaderFunctions {
 
 trait ReaderFunctions {
   def apply[R, A](f: R => A): Reader[R, A] = Reader(f)
-  def read[R]: Reader[R, R] = Reader(r => r)
+  def read[R]: Reader[R, R] = Reader(identity)
 
   def map[R, A, B](r: Reader[R, A])(f: A => B): Reader[R, B] = r.map(f)
   def flatMap[R, A, B](r: Reader[R, A])(f: A => Reader[R, B]): Reader[R, B] = r.flatMap(f)

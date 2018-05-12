@@ -65,6 +65,10 @@ trait KleisliFunctions {
 
   def traverse[F[_]: Applicative, G[_]: Traverse, A, B](ga: G[A])(k: Kleisli[F, A, B]): F[G[B]] =
     Traverse[G].traverse(ga)(k.run)
+
+  def read[F[_]: Applicative, A]: Kleisli[F, A, A] = Kleisli(Applicative[F].pure(_))
+
+  def identity[F[_]: Applicative, A]: Kleisli[F, A, A] = read
 }
 
 trait KleisliImplicits {
