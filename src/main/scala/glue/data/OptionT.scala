@@ -38,6 +38,13 @@ case class OptionT[F[_], A](run: F[Option[A]]) {
     }
   }
 
+  def map2[B, C](ob: OptionT[F, B])(f: (A, B) => C)(implicit F: Applicative[F]): OptionT[F, C] = OptionT {
+    F.map2(run, ob.run) {
+      case (None, _) | (_, None) => none[C]
+      case (l, r) => l.flatMap(a => r.map(b => f(a, b)))
+    }
+  }
+
   def foldLeft[B](z: B)(f: (B, A) => B)(implicit F: Foldable[F]): B =
     F.compose(optionIsTraversable.foldable).foldLeft(run, z)(f)
 
@@ -87,7 +94,7 @@ trait OptionTImplicits {
       def flatMap[A, B](o: OptionT[F, A])(f: A => OptionT[F, B]): OptionT[F, B] = o flatMap f
     }
 
-  implicit def optionTIsFoldable[F[_]: Foldable]: Foldable[({type f[x] = OptionT[F, x]})#f] =
+  private implicit def optionTIsFoldable[F[_]: Foldable]: Foldable[({type f[x] = OptionT[F, x]})#f] =
     new Foldable[({type f[x] = OptionT[F, x]})#f] {
       def foldLeft[A, B](o: OptionT[F, A], z: B)(f: (B, A) => B): B = o.foldLeft(z)(f)
       def foldRight[A, B](o: OptionT[F, A], z: B)(f: (A, B) => B): B = o.foldRight(z)(f)
@@ -99,5 +106,11 @@ trait OptionTImplicits {
       val foldable: Foldable[({type f[x] = OptionT[F, x]})#f] = Foldable[({type f[x] = OptionT[F, x]})#f]
       val functor: Functor[({type f[x] = OptionT[F, x]})#f] = Functor[({type f[x] = OptionT[F, x]})#f]
       def traverse[G[_], A, B](o: OptionT[F, A])(f: A => G[B])(implicit G: Applicative[G]): G[OptionT[F,B]] = o traverse f
+    }
+
+  implicit def optionTIsMonoid[F[_]: Applicative, A: Monoid]: Monoid[OptionT[F, A]] =
+    new Monoid[OptionT[F, A]] {
+      val unit: OptionT[F, A] = OptionT.someT(Monoid[A].unit)
+      def combine(l: OptionT[F, A], r: OptionT[F, A]): OptionT[F, A] = l.map2(r)(Monoid[A].combine)
     }
 }

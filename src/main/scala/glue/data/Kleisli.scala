@@ -8,29 +8,33 @@ final case class Kleisli[F[_], A, B](run: A => F[B]) {
 
   def mapT[G[_], C](t: F[B] => F[C]): Kleisli[F, A, C] = Kleisli(t compose run)
 
-  def mapF[C](f: B => F[C])(implicit G: Monad[F]): Kleisli[F, A, C] = Kleisli(a => G.flatMap(run(a))(f))
+  def mapF[C](f: B => F[C])(implicit F: Monad[F]): Kleisli[F, A, C] = Kleisli(a => F.flatMap(run(a))(f))
 
   def mapK[G[_]](k: NaturalTransformation[F, G]): Kleisli[G, A, B] = Kleisli(run andThen k.apply)
 
-  def apply[C](ff: Kleisli[F, A, B => C])(implicit G: Applicative[F]): Kleisli[F, A, C] = Kleisli { a =>
-    G.apply(ff.run(a))(run(a))
+  def apply[C](ff: Kleisli[F, A, B => C])(implicit F: Applicative[F]): Kleisli[F, A, C] = Kleisli { a =>
+    F.apply(ff.run(a))(run(a))
   }
 
-  def flatMap[C](f: B => Kleisli[F, A, C])(implicit G: Monad[F]): Kleisli[F, A, C] = Kleisli { a =>
-    G.flatMap(run(a))(b => f(b).run(a))
+  def map2[C, D](k: Kleisli[F, A, C])(f: (B, C) => D)(implicit F: Applicative[F]): Kleisli[F, A, D] = Kleisli { a =>
+    F.map2(run(a), k.run(a))(f)
   }
 
-  def flatMapF[C](f: B => F[C])(implicit G: Monad[F]): Kleisli[F, A, C] = Kleisli { a =>
-    G.flatMap(run(a))(f)
+  def flatMap[C](f: B => Kleisli[F, A, C])(implicit F: Monad[F]): Kleisli[F, A, C] = Kleisli { a =>
+    F.flatMap(run(a))(b => f(b).run(a))
   }
 
-  def andThen[C](f: B => F[C])(implicit G: Monad[F]): Kleisli[F, A, C] = mapF(f)
+  def flatMapF[C](f: B => F[C])(implicit F: Monad[F]): Kleisli[F, A, C] = Kleisli { a =>
+    F.flatMap(run(a))(f)
+  }
 
-  def andThen[C](k: Kleisli[F, B, C])(implicit G: Monad[F]): Kleisli[F, A, C] = mapF(k.run)
+  def andThen[C](f: B => F[C])(implicit F: Monad[F]): Kleisli[F, A, C] = mapF(f)
 
-  def compose[Z](f: Z => F[A])(implicit G: Monad[F]): Kleisli[F, Z, B] = Kleisli(z => G.flatMap(f(z))(run))
+  def andThen[C](k: Kleisli[F, B, C])(implicit F: Monad[F]): Kleisli[F, A, C] = mapF(k.run)
 
-  def compose[Z](k: Kleisli[F, Z, A])(implicit G: Monad[F]): Kleisli[F, Z, B] = k andThen run
+  def compose[Z](f: Z => F[A])(implicit F: Monad[F]): Kleisli[F, Z, B] = Kleisli(z => F.flatMap(f(z))(run))
+
+  def compose[Z](k: Kleisli[F, Z, A])(implicit F: Monad[F]): Kleisli[F, Z, B] = k andThen run
 
   def traverse[G[_]: Traverse](ga: G[A])(implicit F: Applicative[F]): F[G[B]] = Traverse[G].traverse(ga)(run)
 
@@ -90,5 +94,11 @@ trait KleisliImplicits {
       val applicative: Applicative[({type f[x] = Kleisli[F, Z, x]})#f] = Applicative[({type f[x] = Kleisli[F, Z, x]})#f]
       def flatMap[A, B](k: Kleisli[F, Z, A])(f: A => Kleisli[F, Z, B]): Kleisli[F, Z, B] =
         k flatMap f
+    }
+
+  implicit def kleisliIsMonoid[F[_]: Applicative, A, B: Monoid]: Monoid[Kleisli[F, A, B]] =
+    new Monoid[Kleisli[F, A, B]] {
+      val unit: Kleisli[F, A, B] = Kleisli.pure(Monoid[B].unit)
+      def combine(l: Kleisli[F, A, B], r: Kleisli[F, A, B]): Kleisli[F, A, B] = l.map2(r)(Monoid[B].combine)
     }
 }

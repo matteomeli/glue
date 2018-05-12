@@ -18,6 +18,10 @@ case class IdT[F[_], A](run: F[Id[A]]) {
     F.map2(ff.run, run)(_(_))
   }
 
+  def map2[B, C](fb: IdT[F, B])(f: (A, B) => C)(implicit F: Applicative[F]): IdT[F, C] = IdT {
+    F.map2(run, fb.run)(f)
+  }
+
   def foldLeft[B](z: B)(f: (B, A) => B)(implicit F: Foldable[F]): B = F.foldLeft(run, z)(f)
 
   def foldRight[B](z: B)(f: (A, B) => B)(implicit F: Foldable[F]): B = F.foldRight(run, z)(f)
@@ -67,11 +71,17 @@ trait IdTImplicits {
       def foldMap[A, B](as: IdT[F, A])(f: A => B)(implicit M: Monoid[B]): B = as.foldMap(f)
     }
 
-  implicit def isTIsTraversable[F[_]: Traverse: Functor: Foldable]: Traverse[({type f[x] = IdT[F, x]})#f] =
+  implicit def idTIsTraversable[F[_]: Traverse: Functor: Foldable]: Traverse[({type f[x] = IdT[F, x]})#f] =
     new Traverse[({type f[x] = IdT[F, x]})#f] {
       val foldable: Foldable[({type f[x] = IdT[F, x]})#f] = Foldable[({type f[x] = IdT[F, x]})#f]
       val functor: Functor[({type f[x] = IdT[F, x]})#f] = Functor[({type f[x] = IdT[F, x]})#f]
       def traverse[G[_], A, B](fa: IdT[F, A])(f: A => G[B])(implicit G: Applicative[G]): G[IdT[F, B]] =
         fa traverse f
+    }
+
+  implicit def idTIsMonoid[F[_]: Applicative, A: Monoid]: Monoid[IdT[F, A]] =
+    new Monoid[IdT[F, A]] {
+      val unit: IdT[F, A] = IdT.pure(Monoid[A].unit)
+      def combine(l: IdT[F, A], r: IdT[F, A]): IdT[F, A] = l.map2(r)(Monoid[A].combine)
     }
 }
