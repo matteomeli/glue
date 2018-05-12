@@ -67,6 +67,8 @@ case class OptionT[F[_], A](run: F[Option[A]]) {
 
   def filter(p: A => Boolean)(implicit F: Functor[F]): OptionT[F, A] = OptionT(F.map(run)(_.filter(p)))
 
+  def withFilter(p: A => Boolean)(implicit F: Functor[F]): OptionT[F, A] = filter(p)
+
   def filterNot(p: A => Boolean)(implicit F: Functor[F]): OptionT[F, A] = OptionT(F.map(run)(_.filterNot(p)))
 
   def fold[B](z: => B)(f: A => B)(implicit F: Functor[F]): F[B] = F.map(run)(_.fold(z)(f))
