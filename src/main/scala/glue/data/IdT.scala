@@ -37,6 +37,8 @@ trait IdTFunctions {
     new NaturalTransformation[({type f[x] = F[Id[x]]})#f, ({type f[x] = IdT[F, x]})#f] {
       def apply[A](fa: F[A]): IdT[F, A] = IdT(fa)
     }
+
+  def pure[F[_]: Applicative, A](a: => A): IdT[F, A] = IdT(Applicative[F].pure(a))
 }
 
 trait IdTImplicits {
@@ -56,5 +58,20 @@ trait IdTImplicits {
     new Monad[({type f[x] = IdT[F, x]})#f] {
       val applicative: Applicative[({type f[x] = IdT[F, x]})#f] = Applicative[({type f[x] = IdT[F, x]})#f]
       def flatMap[A, B](ma: IdT[F, A])(f: A => IdT[F, B]): IdT[F, B] = ma flatMap f
+    }
+
+  private implicit def idTIsFoldable[F[_]: Foldable]: Foldable[({type f[x] = IdT[F, x]})#f] =
+    new Foldable[({type f[x] = IdT[F, x]})#f] {
+      def foldLeft[A, B](as: IdT[F, A], z: B)(f: (B, A) => B): B = as.foldLeft(z)(f)
+      def foldRight[A, B](as: IdT[F, A], z: B)(f: (A, B) => B): B = as.foldRight(z)(f)
+      def foldMap[A, B](as: IdT[F, A])(f: A => B)(implicit M: Monoid[B]): B = as.foldMap(f)
+    }
+
+  implicit def isTIsTraversable[F[_]: Traverse: Functor: Foldable]: Traverse[({type f[x] = IdT[F, x]})#f] =
+    new Traverse[({type f[x] = IdT[F, x]})#f] {
+      val foldable: Foldable[({type f[x] = IdT[F, x]})#f] = Foldable[({type f[x] = IdT[F, x]})#f]
+      val functor: Functor[({type f[x] = IdT[F, x]})#f] = Functor[({type f[x] = IdT[F, x]})#f]
+      def traverse[G[_], A, B](fa: IdT[F, A])(f: A => G[B])(implicit G: Applicative[G]): G[IdT[F, B]] =
+        fa traverse f
     }
 }
