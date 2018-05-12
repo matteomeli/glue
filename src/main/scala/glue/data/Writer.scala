@@ -37,7 +37,7 @@ trait WriterImplicits {
 
   private implicit def writerIsApplicative[W: Monoid]: Applicative[({type f[x] = Writer[W, x]})#f] = new Applicative[({type f[x] = Writer[W, x]})#f] {
     val functor: Functor[({type f[x] = Writer[W, x]})#f] = Functor[({type f[x] = Writer[W, x]})#f]
-    def unit[A](a: => A): Writer[W, A] = Writer(Monoid[W].unit, a)
+    def pure[A](a: => A): Writer[W, A] = Writer(Monoid[W].unit, a)
     def apply[A, B](wf: Writer[W, A => B])(wa: Writer[W, A]): Writer[W, B] = Writer {
       (Monoid[W].combine(wf.written, wa.written), wf.value(wa.value))
     }

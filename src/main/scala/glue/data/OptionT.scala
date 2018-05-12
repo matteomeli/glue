@@ -12,28 +12,28 @@ case class OptionT[F[_], A](run: F[Option[A]]) {
 
   def mapF[B](f: A => F[B])(implicit F: Monad[F]): OptionT[F, B] = OptionT {
     F.flatMap(run) {
-      case None => F.unit(none[B])
+      case None => F.pure(none[B])
       case Some(a) => F.map(f(a))(b => some(b))
     }
   }
 
   def flatMap[B](f: A => OptionT[F, B])(implicit F: Monad[F]): OptionT[F, B] = OptionT {
     F.flatMap(run) {
-      case None => F.unit(none[B])
+      case None => F.pure(none[B])
       case Some(a) => f(a).run
     }
   }
 
   def flatMapF[B](f: A => F[Option[B]])(implicit F: Monad[F]): OptionT[F, B] = OptionT {
     F.flatMap(run) {
-      case None => F.unit(none[B])
+      case None => F.pure(none[B])
       case Some(a) => f(a)
     }
   }
 
   def apply[B](of: => OptionT[F, A => B])(implicit F: Monad[F]): OptionT[F, B] = OptionT {
     F.flatMap(of.run) {
-      case None => F.unit(none[B])
+      case None => F.pure(none[B])
       case Some(f) => F.map(run)(_ map f)
     }
   }
@@ -61,16 +61,16 @@ trait OptionTFunctions {
       def apply[A](fo: F[Option[A]]): OptionT[F, A] = OptionT(fo)
     }
 
-  def someT[F[_]: Applicative, A](a: => A): OptionT[F, A] = OptionT(Applicative[F].unit(some(a)))
-  def noneT[F[_]: Applicative, A]: OptionT[F, A] = OptionT(Applicative[F].unit(none[A]))
+  def someT[F[_]: Applicative, A](a: => A): OptionT[F, A] = OptionT(Applicative[F].pure(some(a)))
+  def noneT[F[_]: Applicative, A]: OptionT[F, A] = OptionT(Applicative[F].pure(none[A]))
 }
 
 trait OptionTImplicits {
-  implicit def optionTIsMonad[F[_]: Monad: Functor]: Monad[({type f[x] = OptionT[F, x]})#f] =
+  implicit def optionTIsMonad[F[_]: Monad: Applicative: Functor]: Monad[({type f[x] = OptionT[F, x]})#f] =
     new Monad[({type f[x] = OptionT[F, x]})#f] {
       val applicative: Applicative[({type f[x] = OptionT[F, x]})#f] = new Applicative[({type f[x] = OptionT[F, x]})#f] {
         val functor: Functor[({type f[x] = OptionT[F, x]})#f] = Functor[({type f[x] = OptionT[F, x]})#f]
-        def unit[A](a: => A): OptionT[F, A] = OptionT(Monad[F].unit(some(a)))
+        def pure[A](a: => A): OptionT[F, A] = OptionT(Applicative[F].pure(some(a)))
         def apply[A, B](of: OptionT[F, A => B])(oa: OptionT[F, A]): OptionT[F, B] = oa.apply(of)
       }
       def flatMap[A, B](o: OptionT[F, A])(f: A => OptionT[F, B]): OptionT[F, B] = o flatMap f
