@@ -3,6 +3,7 @@ package data
 
 trait AllFunctions
   extends IdTFunctions
+  with EitherTFunctions
   with OptionTFunctions
   with ReaderFunctions
   with StateFunctions
@@ -13,6 +14,7 @@ trait AllSyntax
 
 trait AllImplicits
   extends ConstImplicits
+  with EitherTImplicits
   with IdentityImplicits
   with IdTImplicits
   with OptionTImplicits

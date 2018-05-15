@@ -3,10 +3,14 @@ package std
 
 import glue.typeclass.{Applicative, Foldable, Functor, Monad, Monoid, Traverse}
 
-object either extends EitherImplicits
+object either extends EitherFunctions with EitherImplicits
+
+trait EitherFunctions {
+  def fromOption[A, E](o: Option[A], z: => E): Either[E, A] = o.fold[Either[E, A]](Left(z))(Right(_))
+}
 
 trait EitherImplicits {
-  implicit def eitherIsFoldable[L]: Foldable[({type f[x] = Either[L, x]})#f] =
+  private implicit def eitherIsFoldable[L]: Foldable[({type f[x] = Either[L, x]})#f] =
     new Foldable[({type f[x] = Either[L, x]})#f] {
       def foldLeft[A, B](e: Either[L, A], z: B)(f: (B, A) => B): B = e match {
         case Left(_) => z

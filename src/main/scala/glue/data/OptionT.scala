@@ -13,7 +13,7 @@ case class OptionT[F[_], A](run: F[Option[A]]) {
   def mapF[B](f: A => F[B])(implicit F: Monad[F]): OptionT[F, B] = OptionT {
     F.flatMap(run) {
       case None => F.pure(none[B])
-      case Some(a) => F.map(f(a))(b => some(b))
+      case Some(a) => F.map(f(a))(some(_))
     }
   }
 
@@ -89,6 +89,14 @@ case class OptionT[F[_], A](run: F[Option[A]]) {
   }
 
   def orElse(z: => OptionT[F, A])(implicit F: Monad[F]): OptionT[F, A] = this orElseF z.run
+
+  def toLeftEither[R](right: => R)(implicit F: Functor[F]): EitherT[F, A, R] = EitherT {
+    fold[Either[A, R]](Right(right))(Left(_))
+  }
+
+  def toRightEither[L](left: => L)(implicit F: Functor[F]): EitherT[F, L, A] = EitherT {
+    fold[Either[L, A]](Left(left))(Right(_))
+  }
 }
 
 object OptionT extends OptionTFunctions {
@@ -112,12 +120,12 @@ trait OptionTFunctions {
 }
 
 trait OptionTImplicits {
-  private implicit def optionTIsFunctor[F[_]: Functor]: Functor[({type f[x] = OptionT[F, x]})#f] =
+  private implicit def optionTisFunctor[F[_]: Functor]: Functor[({type f[x] = OptionT[F, x]})#f] =
     new Functor[({type f[x] = OptionT[F, x]})#f] {
       def map[A, B](o: OptionT[F, A])(f: A => B): OptionT[F, B] = o map f
     }
 
-  implicit def optionTIsMonad[F[_]: Monad: Applicative: Functor]: Monad[({type f[x] = OptionT[F, x]})#f] =
+  implicit def optionTisMonad[F[_]: Monad: Applicative: Functor]: Monad[({type f[x] = OptionT[F, x]})#f] =
     new Monad[({type f[x] = OptionT[F, x]})#f] {
       val applicative: Applicative[({type f[x] = OptionT[F, x]})#f] = new Applicative[({type f[x] = OptionT[F, x]})#f] {
         val functor: Functor[({type f[x] = OptionT[F, x]})#f] = Functor[({type f[x] = OptionT[F, x]})#f]
@@ -127,21 +135,21 @@ trait OptionTImplicits {
       def flatMap[A, B](o: OptionT[F, A])(f: A => OptionT[F, B]): OptionT[F, B] = o flatMap f
     }
 
-  private implicit def optionTIsFoldable[F[_]: Foldable]: Foldable[({type f[x] = OptionT[F, x]})#f] =
+  private implicit def optionTisFoldable[F[_]: Foldable]: Foldable[({type f[x] = OptionT[F, x]})#f] =
     new Foldable[({type f[x] = OptionT[F, x]})#f] {
       def foldLeft[A, B](o: OptionT[F, A], z: B)(f: (B, A) => B): B = o.foldLeft(z)(f)
       def foldRight[A, B](o: OptionT[F, A], z: B)(f: (A, B) => B): B = o.foldRight(z)(f)
       def foldMap[A, B](o: OptionT[F, A])(f: A => B)(implicit M: Monoid[B]): B = o foldMap f
     }
 
-  implicit def optionTIsTraversable[F[_]: Traverse: Functor: Foldable]: Traverse[({type f[x] = OptionT[F, x]})#f] =
+  implicit def optionTisTraversable[F[_]: Traverse: Functor: Foldable]: Traverse[({type f[x] = OptionT[F, x]})#f] =
     new Traverse[({type f[x] = OptionT[F, x]})#f] {
       val foldable: Foldable[({type f[x] = OptionT[F, x]})#f] = Foldable[({type f[x] = OptionT[F, x]})#f]
       val functor: Functor[({type f[x] = OptionT[F, x]})#f] = Functor[({type f[x] = OptionT[F, x]})#f]
       def traverse[G[_], A, B](o: OptionT[F, A])(f: A => G[B])(implicit G: Applicative[G]): G[OptionT[F,B]] = o traverse f
     }
 
-  implicit def optionTIsMonoid[F[_]: Applicative, A: Monoid]: Monoid[OptionT[F, A]] =
+  implicit def optionTisMonoid[F[_]: Applicative, A: Monoid]: Monoid[OptionT[F, A]] =
     new Monoid[OptionT[F, A]] {
       val unit: OptionT[F, A] = OptionT.someT(Monoid[A].unit)
       def combine(l: OptionT[F, A], r: OptionT[F, A]): OptionT[F, A] = l.map2(r)(Monoid[A].combine)
