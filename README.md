@@ -1,6 +1,6 @@
 # Glue
 
-Glue is a library that started an implementation study of useful category theory concepts for functional programming in Scala.
+Glue is an implementation study of useful category theory concepts for functional programming in Scala.
 
 It is developed using zero external dependencies.
 
