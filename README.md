@@ -8,7 +8,7 @@ Its main differentiating characteristic compared to other similar libraries is t
 
 The common encoding of typeclasses (in Scala) relies on subtyping, like in [Cats](https://github.com/typelevel/cats) and [Scalaz](https://github.com/scalaz/scalaz). This allows the user of those libraries to write clean code but it comes with a cost. As an example for Cats:
 
-```
+```scala
 // This is the usual encoding through inheritance
 trait Functor[F[_]] {
   def map[A, B](fa: F[A])(f: A => B): F[B]
@@ -27,7 +27,7 @@ trait Traverse[F[_]] extends Functor[F] {
 
 Additional syntax provided by the library allows us to call functions like `map`, `flatMap` and `traverse` directly on some `F[A]`, assuming that there is an implciit evidence in scope that `F` is an instance of the appropriate typeclass (`Functor `, `Monad`, `Applicative` and `Traverse` in this case).
 
-```
+```scala
 import cats._
 import cats.implicits._
 
@@ -39,13 +39,13 @@ def foo[F[_]: Monad]: F[Int] = for {
 
 Bear in mind that because for comprehension in Scala desugar, there are calls to `map` and `flatMap` hidden in there. And the fact that, thorugh subtyping the compiler knows that a `Monad[F]` implies `Functor[F]`, so all works out. But does it always? What about this:
 
-```
+```scala
 def foo[F[_]: Monad: Traverse]: F[Int] = Monad[F].pure(10).map(identity)
 ```
 
 Ignore the fact we're not even using `Traverse` - we can't even call `map`! The compiler bails out like this:
 
-```
+```scala
 // <console>:19: error: value map is not a member of type parameter F[Int]
 //        def foo[F[_]: Monad: Traverse]: F[Int] = Monad[F].pure(10).map(identity)
 //                                                                   ^
@@ -60,7 +60,7 @@ To have access to `map` we need `F` to be an instance of `Functor`, which it doe
 
 This library proposes a different approach. Throw away the encoding via subtyping and use trait members instead:
 
-```
+```scala
 trait Functor[F[_]] {
   def map[A, B](fa: F[A])(f: A => B): F[B]
 }
