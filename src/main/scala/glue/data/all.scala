@@ -10,9 +10,6 @@ trait AllFunctions
   with WriterTFunctions
   with WriterFunctions
 
-trait AllSyntax
-  extends IdentitySyntax
-
 trait AllImplicits
   extends ConstImplicits
   with EitherTImplicits
@@ -26,8 +23,6 @@ trait AllImplicits
 
 object functions extends AllFunctions
 
-object syntax extends AllSyntax
-
 object implicits extends AllImplicits
 
-object all extends AllFunctions with AllSyntax with AllImplicits
+object all extends AllFunctions with AllImplicits

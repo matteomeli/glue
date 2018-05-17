@@ -6,13 +6,6 @@ import glue.std.either._
 import glue.std.option._
 
 case class EitherT[F[_], A, B](run: F[Either[A, B]]) {
-  def bimap[C, D](f: A => C, g: B => D)(implicit F: Functor[F]): EitherT[F, C, D] = EitherT {
-    F.map(run) {
-      case Left(a) => Left(f(a))
-      case Right(b) => Right(g(b))
-    }
-  }
-
   def map[D](f: B => D)(implicit F: Functor[F]): EitherT[F, A, D] = bimap(identity, f)
 
   def mapT[G[_]](t: F[Either[A, B]] => G[Either[A, B]]): EitherT[G, A, B] = EitherT(t(run))
@@ -61,6 +54,13 @@ case class EitherT[F[_], A, B](run: F[Either[A, B]]) {
 
   def traverse[G[_]: Applicative, D](f: B => G[D])(implicit T: Traverse[F]): G[EitherT[F, A, D]] =
     Applicative[G].map(T.compose(eitherIsTraversable[A]).traverse(run)(f))(EitherT(_))
+
+  def bimap[C, D](f: A => C, g: B => D)(implicit F: Functor[F]): EitherT[F, C, D] = EitherT {
+    F.map(run) {
+      case Left(a) => Left(f(a))
+      case Right(b) => Right(g(b))
+    }
+  }
 
   def leftMap[C](f: A => C)(implicit F: Functor[F]): EitherT[F, C, B] = bimap(f, identity)
 

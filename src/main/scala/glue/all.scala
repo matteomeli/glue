@@ -13,8 +13,7 @@ trait AllFunctions
   with typeclass.TraverseFunctions
 
 trait AllSyntax
-  extends data.AllSyntax
-  with typeclass.ApplicativeSyntax
+  extends typeclass.ApplicativeSyntax
   with typeclass.EqSyntax
   with typeclass.FoldableSyntax
   with typeclass.FunctorSyntax

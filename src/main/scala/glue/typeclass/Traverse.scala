@@ -118,7 +118,6 @@ trait TraverseSyntax {
   implicit class TraverseOps[F[_]: Traverse, A](self: F[A]) {
     def traverse[G[_]: Applicative, B](f: A => G[B]): G[F[B]] = Traverse[F].traverse(self)(f)
     def sequence[G[_]: Applicative, B](implicit ev: A <:< G[B]): G[F[B]] = {
-      import glue.data.Identity.syntax._
       ev.unused
       Traverse[F].sequence(self.asInstanceOf[F[G[B]]])
     }

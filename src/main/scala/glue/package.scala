@@ -37,9 +37,35 @@ package object glue {
   val Writer = glue.data.Writer
   val WriterT = glue.data.WriterT
 
-  // Data aliases
+  // Id
   type Id[A] = A
+  implicit class IdOps[A](a: A) {
+    def unused(): Unit = ()
+  }
+  private implicit val idIsfunctor: Functor[Id] = new Functor[Id] {
+    def map[A, B](a: Id[A])(f: A => B): Id[B] = f(a)
+  }
+  private implicit val idIsApplicative: Applicative[Id] = new Applicative[Id] {
+    val functor: Functor[Id] = Functor[Id]
+    def pure[A](a: => A): Id[A] = a
+    def apply[A, B](f: Id[A => B])(a: Id[A]): Id[B] = f(a)
+  }
+  implicit val idIsMonad: Monad[Id] = new Monad[Id] {
+    val applicative: Applicative[Id] = Applicative[Id]
+    def flatMap[A, B](a: Id[A])(f: A => Id[B]): Id[B] = f(a)
+  }
+  private implicit val idIsFoldable: Foldable[Id] = new Foldable[Id] {
+    def foldLeft[A, B](a: Id[A], z: B)(f: (B, A) => B): B = f(z, a)
+    def foldRight[A, B](a: Id[A], z: B)(f: (A, B) => B): B = f(a, z)
+    def foldMap[A, B](a: Id[A])(f: A => B)(implicit M: Monoid[B]): B = M.combine(M.unit, f(a))
+  }
+  implicit val idIsTraversable: Traverse[Id] = new Traverse[Id] {
+    val foldable: Foldable[Id] = Foldable[Id]
+    val functor: Functor[Id] = Functor[Id]
+    def traverse[G[_], A, B](a: Id[A])(f: A => G[B])(implicit G: Applicative[G]): G[Id[B]] = f(a)
+  }
 
+  // Data aliases
   type ReaderT[F[_], R, A] = Kleisli[F, R, A]
   val ReaderT = Kleisli
 
@@ -51,10 +77,8 @@ package object glue {
 
   type WriterK[W, A] = WriterT[Id, W, A]
   object WriterK {
-    import Identity.implicits._
-
     def apply[W, A](w: W, a: A): WriterK[W, A] = WriterT[Id, W, A]((w, a))
-    def tell[W](w: W): WriterK[W, Unit] = WriterT.tell(w)(idIsMonad.applicative)
-    def value[W: Monoid, A](a: A): WriterK[W, A] = WriterT.value(a)(idIsMonad.applicative, Monoid[W])
+    def tell[W](w: W): WriterK[W, Unit] = WriterT.tell(w)
+    def value[W: Monoid, A](a: A): WriterK[W, A] = WriterT.value(a)
   }
 }
