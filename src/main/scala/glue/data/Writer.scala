@@ -15,12 +15,13 @@ final case class Writer[W, A](run: (W, A)) {
 }
 
 object Writer extends WriterFunctions {
+  def apply[W, A](w: W, a: A): Writer[W, A] = writer((w, a))
+
   object implicits extends WriterImplicits
 }
 
 trait WriterFunctions {
-  def apply[W, A](w: W, a: A): Writer[W, A] = writer((w, a))
-  def writer[W, A](w: (W, A)): Writer[W, A] = Writer(w)
+  def writer[W, A](wa: (W, A)): Writer[W, A] = Writer(wa)
   def tell[W](w: W): Writer[W, Unit] = Writer((w, ()))
   def written[W, A](w: Writer[W, A]): W = w.written
   def value[W, A](w: Writer[W, A]): A = w.value

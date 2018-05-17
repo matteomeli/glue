@@ -18,13 +18,13 @@ trait IdentitySyntax {
 }
 
 trait IdentityImplicits {
-  implicit val identityIsFoldable: Foldable[Identity] = new Foldable[Identity] {
+  private implicit val identityIsFoldable: Foldable[Identity] = new Foldable[Identity] {
     def foldLeft[A, B](ia: Identity[A], z: B)(f: (B, A) => B): B = f(z, ia.run)
     def foldRight[A, B](ia: Identity[A], z: B)(f: (A, B) => B): B = f(ia.run, z)
     def foldMap[A, B](ia: Identity[A])(f: A => B)(implicit M: Monoid[B]): B = M.combine(M.unit, f(ia.run))
   }
 
-  implicit val idIsFoldable: Foldable[Id] = new Foldable[Id] {
+  private implicit val idIsFoldable: Foldable[Id] = new Foldable[Id] {
     def foldLeft[A, B](a: Id[A], z: B)(f: (B, A) => B): B = f(z, a)
     def foldRight[A, B](a: Id[A], z: B)(f: (A, B) => B): B = f(a, z)
     def foldMap[A, B](a: Id[A])(f: A => B)(implicit M: Monoid[B]): B = M.combine(M.unit, f(a))
@@ -35,7 +35,7 @@ trait IdentityImplicits {
     def flatMap[A, B](ia: Identity[A])(f: A => Identity[B]): Identity[B] = f(ia.run)
   }
 
-  implicit val idIsIsMonad: Monad[Id] = new Monad[Id] {
+  implicit val idIsMonad: Monad[Id] = new Monad[Id] {
     val applicative: Applicative[Id] = Applicative[Id]
     def flatMap[A, B](a: Id[A])(f: A => Id[B]): Id[B] = f(a)
   }

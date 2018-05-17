@@ -26,6 +26,7 @@ package object glue {
   type Reader[R, A] = glue.data.Reader[R, A]
   type State[S, A] = glue.data.State[S, A]
   type Writer[W, A] = glue.data.Writer[W, A]
+  type WriterT[F[_], W, A] = glue.data.WriterT[F, W, A]
   val Const = glue.data.Const
   val Identity = glue.data.Identity
   val IdT = glue.data.IdT
@@ -34,6 +35,7 @@ package object glue {
   val Reader = glue.data.Reader
   val State = glue.data.State
   val Writer = glue.data.Writer
+  val WriterT = glue.data.WriterT
 
   // Data aliases
   type Id[A] = A
@@ -45,5 +47,14 @@ package object glue {
   object ReaderK {
     def apply[R, A](f: R => A): ReaderK[R, A] = ReaderT[Id, R, A](f)
     def read[R]: ReaderK[R, R] = ReaderT[Id, R, R](identity)
+  }
+
+  type WriterK[W, A] = WriterT[Id, W, A]
+  object WriterK {
+    import Identity.implicits._
+
+    def apply[W, A](w: W, a: A): WriterK[W, A] = WriterT[Id, W, A]((w, a))
+    def tell[W](w: W): WriterK[W, Unit] = WriterT.tell(w)(idIsMonad.applicative)
+    def value[W: Monoid, A](a: A): WriterK[W, A] = WriterT.value(a)(idIsMonad.applicative, Monoid[W])
   }
 }
