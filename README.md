@@ -81,7 +81,6 @@ trait Monad[F[_]] {
 
 Future work includes:
 
-* StateT monad transformer
 * Validation
 * Bifunctor
 * Bifoldable

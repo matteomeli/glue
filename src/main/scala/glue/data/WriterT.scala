@@ -54,7 +54,7 @@ case class WriterT[F[_], W, A](run: F[(W, A)]) {
     F.map(run) { case (w, a) => (f(w), g(a)) }
   }
 
-  def mapTuple[X, B](f: ((W, A)) => (X, B))(implicit F: Functor[F]): WriterT[F, X, B] = WriterT {
+  def transform[X, B](f: ((W, A)) => (X, B))(implicit F: Functor[F]): WriterT[F, X, B] = WriterT {
     F.map(run)(f)
   }
 

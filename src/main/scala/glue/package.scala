@@ -27,6 +27,7 @@ package object glue {
   type State[S, A] = glue.data.State[S, A]
   type Writer[W, A] = glue.data.Writer[W, A]
   type WriterT[F[_], W, A] = glue.data.WriterT[F, W, A]
+  type StateT[F[_], S, T, A] = glue.data.StateT[F, S, T, A]
   val Const = glue.data.Const
   val Identity = glue.data.Identity
   val IdT = glue.data.IdT
@@ -36,6 +37,7 @@ package object glue {
   val State = glue.data.State
   val Writer = glue.data.Writer
   val WriterT = glue.data.WriterT
+  val StateT = glue.data.StateT
 
   // Id
   type Id[A] = A
@@ -80,5 +82,15 @@ package object glue {
     def apply[W, A](w: W, a: A): WriterK[W, A] = WriterT[Id, W, A]((w, a))
     def tell[W](w: W): WriterK[W, Unit] = WriterT.tell(w)
     def value[W: Monoid, A](a: A): WriterK[W, A] = WriterT.value(a)
+  }
+
+  type StateK[S, A] = StateT[Id, S, S, A]
+  object StateK {
+    def apply[S, A](f: S => (S, A)): StateK[S, A] = StateT[Id, S, S, A](s => f(s))
+    def pure[S, A](a: => A): StateK[S, A] = StateT[Id, S, S, A](s => (s, a))
+
+    def get[S]: StateK[S, S] = StateT.get[Id, S]
+    def set[S](s: S): StateK[S, Unit] = StateT.set(s)
+    def modify[S](f: S => S): StateK[S, Unit] = StateT.modify(f)
   }
 }
