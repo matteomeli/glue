@@ -6,7 +6,7 @@ lazy val root = (project in file(".")).
       organization := "org.typegrade",
       organizationName := "Typegrade",
       scalaVersion := "2.12.6",
-      version      := "0.1.3"
+      version      := "0.2.0"
     )),
     name := "Glue",
     libraryDependencies ++= Seq(
