@@ -114,11 +114,14 @@ trait StateTFunctions {
     s => Applicative[F].map(f(s))((s, _))
   }
 
-  // lift
+  def liftF[F[_]: Applicative, S, A](fa: F[A]): StateT[F, S, S, A] = StateT.init {
+    s => Applicative[F].map(fa)((s, _))
+  }
 
-  // liftF
-
-  // liftK
+  def liftK[F[_]: Applicative, S]: NaturalTransformation[F, ({type f[x] = StateT[F, S, S, x]})#f] =
+    new NaturalTransformation[F, ({type f[x] = StateT[F, S, S, x]})#f] {
+      def apply[A](fa: F[A]): StateT[F, S, S, A] = liftF(fa)
+    }
 }
 
 trait StateTImplicits {
