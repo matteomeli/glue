@@ -81,7 +81,6 @@ trait Monad[F[_]] {
 
 Future work includes:
 
-* Validation
 * Bifunctor
 * Bifoldable
 * Bitraverse
