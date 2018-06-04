@@ -95,6 +95,7 @@ Future work includes:
 * IO
 * Streaming IO
 * Arrows
+* Improved MTL-style support
 
 Future related work includes:
 * Parallel
