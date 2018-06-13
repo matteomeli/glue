@@ -81,7 +81,7 @@ trait ApplicativeSyntax {
     // Allow the apply to be injected as well when A is of type Function1[B, C]
     def apply[B, C](fb: F[B])(implicit ev: A <:< B => C): F[C] = {
       // This function uses generalized type constraints as implicit evidence parameters
-      // If -Ywarn-unused:implicitshe is passed to the compiler,
+      // If -Ywarn-unused:implicits is passed to the compiler,
       // it will issue a warning about ev being unused.
       // If -Xfatal-warnings is used, compilation will fail.
       // The following line allows compilation under those two flags.

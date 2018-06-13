@@ -1,5 +1,5 @@
 package glue
-package io
+package effect
 
 sealed trait IO[A] { self =>
   def run: A

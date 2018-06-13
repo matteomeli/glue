@@ -4,11 +4,11 @@ lazy val root = (project in file(".")).
   settings(
     inThisBuild(List(
       organization := "org.typegrade",
-      organizationName := "Typegrade",
+      organizationName := "typegrade",
       scalaVersion := "2.12.6",
       version      := "0.2.0"
     )),
-    name := "Glue",
+    name := "glue",
     libraryDependencies ++= Seq(
       scalaTest % Test,
       scalaCheck % Test
