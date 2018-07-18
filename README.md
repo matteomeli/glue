@@ -2,7 +2,18 @@
 
 Glue is an implementation study of useful category theory concepts for functional programming in Scala.
 
-It is developed using zero external dependencies.
+## Getting Started
+
+To get started with SBT, simply add the following to your `build.sbt` file:
+
+```scala
+resolvers += Resolver.bintrayRepo("matteomeli", "maven")
+libraryDependencies += "io.github.matteomeli" %% "glue" % "0.2.2"
+```
+
+## Philosophy
+
+Glue is developed using zero external dependencies.
 
 Its main differentiating characteristic compared to other similar libraries is the _encoding_ of typeclasses.
 
