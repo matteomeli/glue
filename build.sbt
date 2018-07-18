@@ -3,10 +3,10 @@ import Dependencies._
 lazy val root = (project in file(".")).
   settings(
     inThisBuild(List(
-      organization := "org.typegrade",
-      organizationName := "typegrade",
+      organization := "io.github.matteomeli",
+      organizationName := "matteomeli",
       scalaVersion := "2.12.6",
-      version      := "0.2.0"
+      version      := "0.2.2"
     )),
     name := "glue",
     libraryDependencies ++= Seq(
@@ -63,5 +63,6 @@ lazy val root = (project in file(".")).
     scalacOptions in (Compile, console) --= Seq("-Ywarn-unused:imports", "-Xfatal-warnings"),
     parallelExecution in Test := false,
     licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
-    bintrayPackageLabels := Seq("functional programming", "category theory", "scala")
+    bintrayPackageLabels := Seq("functional programming", "category theory", "scala"),
+    bintrayVcsUrl := Some("https://github.com/matteomeli/glue.git")
   )

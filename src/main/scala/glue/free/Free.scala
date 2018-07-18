@@ -11,7 +11,7 @@ sealed trait Free[F[_], A] {
   def run(implicit ev: Free[F, A] =:= Trampoline[A]): A =
     runTrampoline(ev(this))
 
-  def runM(implicit F: Monad[F]): F[A] = Free.runM(this)
+  //def runM(implicit F: Monad[F]): F[A] = Free.runM(this)
 }
 
 case class Pure[F[_], A](a: A) extends Free[F, A]
@@ -32,7 +32,7 @@ object Free extends FreeFunctions {
     }
   }
 
-  @annotation.tailrec
+  /*@annotation.tailrec
   def runM[F[_], A](fa: Free[F, A])(implicit F: Monad[F]): F[A] = fa match {
     case Pure(a) => F.pure(a)
     case Effect(e) => e
@@ -41,7 +41,7 @@ object Free extends FreeFunctions {
       case Effect(e) => ???
       case Chain(v, f) => ???
     }
-  }
+  }*/
 
   def runFree[F[_], G[_], A](fa: Free[F, A])(k: NaturalTransformation[F, G])(implicit G: Monad[G]): G[A] = ???
 
