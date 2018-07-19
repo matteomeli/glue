@@ -3,6 +3,20 @@ package data
 
 import glue.typeclass.{Applicative, Functor, Monad}
 
+/*
+TODO: Replace this implementation with:
+
+  type State[S, A] = IndexedStateT[Id, S, S, A]
+  object State {
+    def apply[S, A](f: S => (S, A)): StateK[S, A] = IndexedStateT[Id, S, S, A](s => f(s))
+    def pure[S, A](a: => A): StateK[S, A] = IndexedStateT[Id, S, S, A](s => (s, a))
+
+    def get[S]: StateK[S, S] = IndexedStateT.get[Id, S]
+    def set[S](s: S): StateK[S, Unit] = IndexedStateT.set(s)
+    def modify[S](f: S => S): StateK[S, Unit] = IndexedStateT.modify(f)
+  }
+*/
+
 final case class State[S, A](run: S => (S, A)) {
   def map[B](f: A => B): State[S, B] = State { s =>
     val (s1, a) = run(s)

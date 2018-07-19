@@ -3,6 +3,16 @@ package data
 
 import glue.typeclass.{Applicative, Functor, Monad}
 
+/*
+TODO: Replace this implementation with:
+
+  type Reader[R, A] = Kleisli[Id, R, A]
+  object Reader {
+    def apply[R, A](f: R => A): Reader[R, A] = Kleisli[Id, R, A](f)
+    def read[R]: Reader[R, R] = Kleisli[Id, R, R](identity)
+  }
+*/
+
 final case class Reader[R, A](run: R => A) {
   def map[B](f: A => B): Reader[R, B] = Reader(r => f(run(r)))
   def flatMap[B](f: A => Reader[R, B]): Reader[R, B] = Reader(r => f(run(r)).run(r))

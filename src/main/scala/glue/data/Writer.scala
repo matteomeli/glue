@@ -3,6 +3,17 @@ package data
 
 import glue.typeclass.{Applicative, Functor, Monad, Monoid}
 
+/*
+TODO: Replace this implementation with:
+
+  type Writer[W, A] = WriterT[Id, W, A]
+  object Writer {
+    def apply[W, A](w: W, a: A): Writer[W, A] = WriterT[Id, W, A]((w, a))
+    def tell[W](w: W): Writer[W, Unit] = WriterT.tell(w)
+    def value[W: Monoid, A](a: A): Writer[W, A] = WriterT.value(a)
+  }
+*/
+
 final case class Writer[W, A](run: (W, A)) {
   def written: W = run._1
   def value: A = run._2
