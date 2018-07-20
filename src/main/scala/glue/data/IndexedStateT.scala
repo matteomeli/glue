@@ -125,12 +125,12 @@ trait IndexedStateTFunctions {
 }
 
 trait IndexedStateTImplicits {
-  implicit def indexedIndexedStateTisFunctor[F[_]: Functor, S, T]: Functor[({type f[x] = IndexedStateT[F, S, T, x]})#f] =
+  implicit def indexedStateTisFunctor[F[_]: Functor, S, T]: Functor[({type f[x] = IndexedStateT[F, S, T, x]})#f] =
     new Functor[({type f[x] = IndexedStateT[F, S, T, x]})#f] {
       def map[A, B](s: IndexedStateT[F, S, T, A])(f: A => B): IndexedStateT[F, S, T, B] = s map f
     }
 
-  implicit def indexedIndexedStateTisApplicative[F[_]: Monad: Applicative: Functor, S]: Applicative[({type f[x] = IndexedStateT[F, S, S, x]})#f] =
+  implicit def indexedStateTisApplicative[F[_]: Monad: Applicative: Functor, S]: Applicative[({type f[x] = IndexedStateT[F, S, S, x]})#f] =
     new Applicative[({type f[x] = IndexedStateT[F, S, S, x]})#f] {
       val functor: Functor[({type f[x] = IndexedStateT[F, S, S, x]})#f] = Functor[({type f[x] = IndexedStateT[F, S, S, x]})#f]
       def pure[A](a: => A): IndexedStateT[F, S, S, A] = IndexedStateT.pure(a)
@@ -145,7 +145,7 @@ trait IndexedStateTImplicits {
       }
     }
 
-  implicit def indexedIndexedStateTisMonad[F[_]: Monad: Applicative: Functor, S]: Monad[({type f[x] = IndexedStateT[F, S, S, x]})#f] =
+  implicit def indexedStateTisMonad[F[_]: Monad: Applicative: Functor, S]: Monad[({type f[x] = IndexedStateT[F, S, S, x]})#f] =
     new Monad[({type f[x] = IndexedStateT[F, S, S, x]})#f] {
       val applicative: Applicative[({type f[x] = IndexedStateT[F, S, S, x]})#f] = Applicative[({type f[x] = IndexedStateT[F, S, S, x]})#f]
       def flatMap[A, B](sa: IndexedStateT[F, S, S, A])(f: A => IndexedStateT[F, S, S, B]): IndexedStateT[F, S, S, B] = sa flatMap f

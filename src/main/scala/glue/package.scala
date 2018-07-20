@@ -21,17 +21,28 @@ package object glue {
   type Const[A, B] = glue.data.Const[A, B]
   type Identity[A] = glue.data.Identity[A]
   type IdT[F[_], A] = glue.data.IdT[F, A]
-  type Kleisli[F[_], A, B] = glue.data.Kleisli[F, A, B]
   type OptionT[F[_], A] = glue.data.OptionT[F, A]
+  type Kleisli[F[_], A, B] = glue.data.Kleisli[F, A, B]
+  type ReaderT[F[_], A, B] = glue.data.ReaderT[F, A, B]
+  type Reader[A, B] = glue.data.Reader[A, B]
   type WriterT[F[_], W, A] = glue.data.WriterT[F, W, A]
+  type Writer[W, A] = glue.data.Writer[W, A]
   type IndexedStateT[F[_], S, T, A] = glue.data.IndexedStateT[F, S, T, A]
+  type StateT[F[_], S, A] = glue.data.StateT[F, S, A]
+  type State[S, A] = glue.data.State[S, A]
+
   val Const = glue.data.Const
   val Identity = glue.data.Identity
   val IdT = glue.data.IdT
-  val Kleisli = glue.data.Kleisli
   val OptionT = glue.data.OptionT
+  val Kleisli = glue.data.Kleisli
+  val ReaderT = glue.data.ReaderT
+  val Reader = glue.data.Reader
   val WriterT = glue.data.WriterT
+  val Writer = glue.data.Writer
   val IndexedStateT = glue.data.IndexedStateT
+  val StateT = glue.data.StateT
+  val State = glue.data.State
 
   // Id
   type Id[A] = A
@@ -61,17 +72,4 @@ package object glue {
     def traverse[G[_], A, B](a: Id[A])(f: A => G[B])(implicit G: Applicative[G]): G[Id[B]] = f(a)
   }
 
-  // Data aliases
-  type ReaderT[F[_], R, A] = Kleisli[F, R, A]
-  val ReaderT = Kleisli
-
-  type StateT[F[_], S, A] = IndexedStateT[F, S, S, A]
-
-  // TODO: Repleace with data aliases...
-  type Reader[R, A] = glue.data.Reader[R, A]
-  type State[S, A] = glue.data.State[S, A]
-  type Writer[W, A] = glue.data.Writer[W, A]
-  val Reader = glue.data.Reader
-  val State = glue.data.State
-  val Writer = glue.data.Writer
 }
