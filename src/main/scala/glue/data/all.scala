@@ -5,11 +5,9 @@ trait AllFunctions
   extends IdTFunctions
   with EitherTFunctions
   with OptionTFunctions
-  with ReaderFunctions
-  with StateFunctions
+  with KleisliFunctions
   with WriterTFunctions
-  with WriterFunctions
-  with StateTFunctions
+  with IndexedStateTFunctions
 
 trait AllImplicits
   extends ConstImplicits
@@ -17,11 +15,9 @@ trait AllImplicits
   with IdentityImplicits
   with IdTImplicits
   with OptionTImplicits
-  with ReaderImplicits
-  with StateImplicits
+  with KleisliImplicits
   with WriterTImplicits
-  with WriterImplicits
-  with StateTImplicits
+  with IndexedStateTImplicits
 
 object functions extends AllFunctions
 
