@@ -59,6 +59,8 @@ case class StateT[F[_], S, T, A](runF: F[S => F[(T, A)]]) {
 
   def get(implicit F: Functor[F]): StateT[F, S, T, T] = inspect(identity)
 
+  def set(t: T)(implicit F: Applicative[F]): StateT[F, S, T, Unit] = StateT.init { _ => Applicative[F].pure((t, ())) }
+
   def modify[U](f: T => U)(implicit F: Functor[F]): StateT[F, S, U, A] = transform { case (t, a) => (f(t), a) }
 
   def inspect[U](f: T => U)(implicit F: Functor[F]): StateT[F, S, T, U] = transform { case (t, _) => (t, f(t)) }
