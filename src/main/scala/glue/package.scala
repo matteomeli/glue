@@ -19,6 +19,7 @@ package object glue {
 
   // Data
   type Const[A, B] = glue.data.Const[A, B]
+  type EitherT[F[_], A, B] = glue.data.EitherT[F, A, B]
   type Identity[A] = glue.data.Identity[A]
   type IdT[F[_], A] = glue.data.IdT[F, A]
   type Kleisli[F[_], A, B] = glue.data.Kleisli[F, A, B]
@@ -29,6 +30,7 @@ package object glue {
   type WriterT[F[_], W, A] = glue.data.WriterT[F, W, A]
   type IndexedStateT[F[_], S, T, A] = glue.data.IndexedStateT[F, S, T, A]
   val Const = glue.data.Const
+  val EitherT = glue.data.EitherT
   val Identity = glue.data.Identity
   val IdT = glue.data.IdT
   val Kleisli = glue.data.Kleisli
