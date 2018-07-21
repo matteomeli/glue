@@ -78,11 +78,11 @@ case class IndexedStateT[F[_], S, T, A](runF: F[S => F[(T, A)]]) {
   def runEmptyA(implicit F: Monad[F], M: Monoid[S]): F[A] = runA(M.unit)
 }
 
-object IndexedStateT extends StateTFunctions {
-  object implicits extends StateTImplicits
+object IndexedStateT extends IndexedStateTFunctions {
+  object implicits extends IndexedStateTImplicits
 }
 
-trait StateTFunctions {
+trait IndexedStateTFunctions {
   def pure[F[_]: Applicative, S, A](a: A)(implicit d: DummyImplicit): IndexedStateT[F, S, S, A] =
     IndexedStateT(Applicative[F].pure(s => Applicative[F].pure((s, a))))
 
@@ -126,7 +126,7 @@ trait StateTFunctions {
     }
 }
 
-trait StateTImplicits {
+trait IndexedStateTImplicits {
   implicit def stateTisFunctor[F[_]: Functor, S, T]: Functor[({type f[x] = IndexedStateT[F, S, T, x]})#f] =
     new Functor[({type f[x] = IndexedStateT[F, S, T, x]})#f] {
       def map[A, B](s: IndexedStateT[F, S, T, A])(f: A => B): IndexedStateT[F, S, T, B] = s map f
