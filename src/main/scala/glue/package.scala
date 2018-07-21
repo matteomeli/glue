@@ -22,24 +22,24 @@ package object glue {
   type EitherT[F[_], A, B] = glue.data.EitherT[F, A, B]
   type Identity[A] = glue.data.Identity[A]
   type IdT[F[_], A] = glue.data.IdT[F, A]
+  type IndexedStateT[F[_], S, T, A] = glue.data.IndexedStateT[F, S, T, A]
   type Kleisli[F[_], A, B] = glue.data.Kleisli[F, A, B]
   type OptionT[F[_], A] = glue.data.OptionT[F, A]
   type Reader[R, A] = glue.data.Reader[R, A]
   type State[S, A] = glue.data.State[S, A]
   type Writer[W, A] = glue.data.Writer[W, A]
   type WriterT[F[_], W, A] = glue.data.WriterT[F, W, A]
-  type IndexedStateT[F[_], S, T, A] = glue.data.IndexedStateT[F, S, T, A]
   val Const = glue.data.Const
   val EitherT = glue.data.EitherT
   val Identity = glue.data.Identity
   val IdT = glue.data.IdT
+  val IndexedStateT = glue.data.IndexedStateT
   val Kleisli = glue.data.Kleisli
   val OptionT = glue.data.OptionT
   val Reader = glue.data.Reader
   val State = glue.data.State
   val Writer = glue.data.Writer
   val WriterT = glue.data.WriterT
-  val IndexedStateT = glue.data.IndexedStateT
 
   // Id
   type Id[A] = A
