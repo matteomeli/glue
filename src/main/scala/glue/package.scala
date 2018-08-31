@@ -8,6 +8,7 @@ package object glue {
   type Monoid[A] = glue.typeclass.Monoid[A]
   type Show[A] = glue.typeclass.Show[A]
   type Traverse[F[_]] = glue.typeclass.Traverse[F]
+
   val Applicative = glue.typeclass.Applicative
   val Eq = glue.typeclass.Eq
   val Foldable = glue.typeclass.Foldable
@@ -26,9 +27,7 @@ package object glue {
   type Kleisli[F[_], A, B] = glue.data.Kleisli[F, A, B]
   type OptionT[F[_], A] = glue.data.OptionT[F, A]
   type Reader[R, A] = glue.data.Reader[R, A]
-  type State[S, A] = glue.data.State[S, A]
-  type Writer[W, A] = glue.data.Writer[W, A]
-  type WriterT[F[_], W, A] = glue.data.WriterT[F, W, A]
+
   val Const = glue.data.Const
   val EitherT = glue.data.EitherT
   val Identity = glue.data.Identity
@@ -37,16 +36,13 @@ package object glue {
   val Kleisli = glue.data.Kleisli
   val OptionT = glue.data.OptionT
   val Reader = glue.data.Reader
-  val State = glue.data.State
-  val Writer = glue.data.Writer
-  val WriterT = glue.data.WriterT
 
   // Id
   type Id[A] = A
   implicit class IdOps[A](a: A) {
     def unused(): Unit = ()
   }
-  private implicit val idIsfunctor: Functor[Id] = new Functor[Id] {
+  implicit val idIsfunctor: Functor[Id] = new Functor[Id] {
     def map[A, B](a: Id[A])(f: A => B): Id[B] = f(a)
   }
   private implicit val idIsApplicative: Applicative[Id] = new Applicative[Id] {
@@ -67,32 +63,5 @@ package object glue {
     val foldable: Foldable[Id] = Foldable[Id]
     val functor: Functor[Id] = Functor[Id]
     def traverse[G[_], A, B](a: Id[A])(f: A => G[B])(implicit G: Applicative[G]): G[Id[B]] = f(a)
-  }
-
-  // Data aliases
-  type ReaderT[F[_], R, A] = Kleisli[F, R, A]
-  val ReaderT = Kleisli
-
-  type ReaderK[R, A] = ReaderT[Id, R, A]
-  object ReaderK {
-    def apply[R, A](f: R => A): ReaderK[R, A] = ReaderT[Id, R, A](f)
-    def read[R]: ReaderK[R, R] = ReaderT[Id, R, R](identity)
-  }
-
-  type WriterK[W, A] = WriterT[Id, W, A]
-  object WriterK {
-    def apply[W, A](w: W, a: A): WriterK[W, A] = WriterT[Id, W, A]((w, a))
-    def tell[W](w: W): WriterK[W, Unit] = WriterT.tell(w)
-    def value[W: Monoid, A](a: A): WriterK[W, A] = WriterT.value(a)
-  }
-
-  type StateK[S, A] = IndexedStateT[Id, S, S, A]
-  object StateK {
-    def apply[S, A](f: S => (S, A)): StateK[S, A] = IndexedStateT[Id, S, S, A](s => f(s))
-    def pure[S, A](a: => A): StateK[S, A] = IndexedStateT[Id, S, S, A](s => (s, a))
-
-    def get[S]: StateK[S, S] = IndexedStateT.get[Id, S]
-    def set[S](s: S): StateK[S, Unit] = IndexedStateT.set(s)
-    def modify[S](f: S => S): StateK[S, Unit] = IndexedStateT.modify(f)
   }
 }
