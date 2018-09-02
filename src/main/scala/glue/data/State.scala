@@ -31,8 +31,7 @@ trait StateFunctions {
   } yield ()
 
   /*
-  def map[S, A, B](s: State[S, A])(f: A => B): State[S, B] = s.map(f)
-  def flatMap[S, A, B](s: State[S, A])(f: A => State[S, B]): State[S, B] = s.flatMap(f)
+  // TODO: How do you add these to State, considering it's only a type alias? They would need to go in IndexedStateT... but is that possible?
   def map2[S, A, B, C](s1: State[S, A], s2: State[S, B])(f: (A, B) => C): State[S, C] = s1.map2(s2)(f)
   def sequence[S, A](as: List[State[S, A]]): State[S, List[A]] =
     as.foldRight[State[S, List[A]]](init(List())) { (s, l) => s.map2(l)(_ :: _) }
