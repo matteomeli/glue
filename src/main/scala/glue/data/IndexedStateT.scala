@@ -61,6 +61,8 @@ case class IndexedStateT[F[_], S, T, A](runF: F[S => F[(T, A)]]) {
 
   def set(t: T)(implicit F: Applicative[F]): IndexedStateT[F, S, T, Unit] = IndexedStateT.init { _ => Applicative[F].pure((t, ())) }
 
+  def put(t: T)(implicit F: Applicative[F]): IndexedStateT[F, S, T, Unit] = put(t)
+
   def modify[U](f: T => U)(implicit F: Functor[F]): IndexedStateT[F, S, U, A] = transform { case (t, a) => (f(t), a) }
 
   def inspect[U](f: T => U)(implicit F: Functor[F]): IndexedStateT[F, S, T, U] = transform { case (t, _) => (t, f(t)) }
@@ -83,10 +85,11 @@ object IndexedStateT extends IndexedStateTFunctions {
 }
 
 trait IndexedStateTFunctions {
+  // Like apply but missing the outer F context
+  def init[F[_]: Applicative, S, T, A](f: S => F[(T, A)]): IndexedStateT[F, S, T, A] = IndexedStateT(Applicative[F].pure(f))
+
   def pure[F[_]: Applicative, S, A](a: A)(implicit d: DummyImplicit): IndexedStateT[F, S, S, A] =
     IndexedStateT(Applicative[F].pure(s => Applicative[F].pure((s, a))))
-
-  def init[F[_]: Applicative, S, T, A](f: S => F[(T, A)]): IndexedStateT[F, S, T, A] = IndexedStateT(Applicative[F].pure(f))
 
   def set[F[_]: Applicative, S, T](t: T): IndexedStateT[F, S, T, Unit] = IndexedStateT.init { _ =>
     Applicative[F].pure((t, ()))
@@ -131,12 +134,33 @@ trait IndexedStateTImplicits {
     new Functor[({type f[x] = IndexedStateT[F, S, T, x]})#f] {
       def map[A, B](s: IndexedStateT[F, S, T, A])(f: A => B): IndexedStateT[F, S, T, B] = s map f
     }
+}
 
-  implicit def indexedStateTIsApplicative[F[_]: Monad: Applicative: Functor, S]: Applicative[({type f[x] = IndexedStateT[F, S, S, x]})#f] =
-    new Applicative[({type f[x] = IndexedStateT[F, S, S, x]})#f] {
-      val functor: Functor[({type f[x] = IndexedStateT[F, S, S, x]})#f] = Functor[({type f[x] = IndexedStateT[F, S, S, x]})#f]
-      def pure[A](a: => A): IndexedStateT[F, S, S, A] = IndexedStateT.pure(a)
-      def apply[A, B](sf: IndexedStateT[F, S, S, A => B])(sa: IndexedStateT[F, S, S, A]): IndexedStateT[F, S, S, B] = IndexedStateT {
+trait StateTFunctions extends IndexedStateTFunctions {
+  def constantStateT[F[_]: Applicative, S, A](a: A)(s: => S): StateT[F, S, A] = StateT.init(_ => Applicative[F].pure((s, a)))
+
+  def stateT[F[_]: Applicative, S, A](a: A): StateT[F, S, A] = StateT.init(s => Applicative[F].pure((s, a)))
+
+  // DummyImplicit is needed for avoiding type erasure issues as IndexedStateT.modify would have the same type as this function after erasure.
+  def modify[F[_]: Applicative, S](f: S => S)(implicit d: DummyImplicit): StateT[F, S, Unit] = StateT.init(s => Applicative[F].pure((f(s), ())))
+
+  // DummyImplicit is needed for avoiding type erasure issues as IndexedStateT.modifyF would have the same type as this function after erasure.
+  def modifyF[F[_]: Applicative, S](f: S => F[S])(implicit d: DummyImplicit): StateT[F, S, Unit] = StateT.init(s => Applicative[F].map(f(s))(s => (s, ())))
+
+  // DummyImplicit is needed for avoiding type erasure issues as IndexedStateT.set would have the same type as this function after erasure.
+  def set[F[_]: Applicative, S](s: S)(implicit d: DummyImplicit): StateT[F, S, Unit] = StateT.init(_ => Applicative[F].pure((s, ())))
+
+  // DummyImplicit is needed for avoiding type erasure issues as IndexedStateT.setF would have the same type as this function after erasure.
+  def setF[F[_]: Applicative, S](fs: F[S])(implicit d: DummyImplicit): StateT[F, S, Unit] = StateT.init(_ => Applicative[F].map(fs)(s => (s, ())))
+}
+
+trait StateTImplicits extends IndexedStateTImplicits
+{
+  private implicit def stateTIsApplicative[F[_]: Monad: Applicative: Functor, S]: Applicative[({type f[x] = StateT[F, S, x]})#f] =
+    new Applicative[({type f[x] = StateT[F, S, x]})#f] {
+      val functor: Functor[({type f[x] = StateT[F, S, x]})#f] = Functor[({type f[x] = StateT[F, S, x]})#f]
+      def pure[A](a: => A): StateT[F, S, A] = StateT.pure(a)
+      def apply[A, B](sf: StateT[F, S, A => B])(sa: StateT[F, S, A]): StateT[F, S, B] = StateT {
         Functor[F].map(sf.runF) { sfsab =>
           sfsab andThen { fsab =>
             Monad[F].flatMap(fsab) { case (s1, f) =>
@@ -147,9 +171,9 @@ trait IndexedStateTImplicits {
       }
     }
 
-  implicit def indexedStateTIsMonad[F[_]: Monad: Applicative: Functor, S]: Monad[({type f[x] = IndexedStateT[F, S, S, x]})#f] =
-    new Monad[({type f[x] = IndexedStateT[F, S, S, x]})#f] {
-      val applicative: Applicative[({type f[x] = IndexedStateT[F, S, S, x]})#f] = Applicative[({type f[x] = IndexedStateT[F, S, S, x]})#f]
-      def flatMap[A, B](sa: IndexedStateT[F, S, S, A])(f: A => IndexedStateT[F, S, S, B]): IndexedStateT[F, S, S, B] = sa flatMap f
+  implicit def indexedStateTIsMonad[F[_]: Monad: Applicative: Functor, S]: Monad[({type f[x] = StateT[F, S, x]})#f] =
+    new Monad[({type f[x] = StateT[F, S, x]})#f] {
+      val applicative: Applicative[({type f[x] = StateT[F, S, x]})#f] = Applicative[({type f[x] = StateT[F, S, x]})#f]
+      def flatMap[A, B](sa: StateT[F, S, A])(f: A => StateT[F, S, B]): StateT[F, S, B] = sa flatMap f
     }
 }

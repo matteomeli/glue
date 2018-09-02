@@ -13,9 +13,8 @@ trait WriterFunctions {
 }
 
 trait WriterImplicits {
-  implicit def writerIsMonad[W: Monoid]: Monad[({type f[x] = Writer[W, x]})#f] = new Monad[({type f[x] = Writer[W, x]})#f] {
-    val applicative: Applicative[({type f[x] = Writer[W, x]})#f] = Applicative[({type f[x] = Writer[W, x]})#f]
-    def flatMap[A, B](wa: Writer[W, A])(f: A => Writer[W, B]): Writer[W, B] = wa flatMap f
+  private implicit def writerIsFunctor[W]: Functor[({type f[x] = Writer[W, x]})#f] = new Functor[({type f[x] = Writer[W, x]})#f] {
+    def map[A, B](wa: Writer[W, A])(f: A => B): Writer[W, B] = wa map f
   }
 
   private implicit def writerIsApplicative[W: Monoid]: Applicative[({type f[x] = Writer[W, x]})#f] = new Applicative[({type f[x] = Writer[W, x]})#f] {
@@ -28,7 +27,8 @@ trait WriterImplicits {
     }
   }
 
-  private implicit def writerIsFunctor[W]: Functor[({type f[x] = Writer[W, x]})#f] = new Functor[({type f[x] = Writer[W, x]})#f] {
-    def map[A, B](wa: Writer[W, A])(f: A => B): Writer[W, B] = wa map f
+  implicit def writerIsMonad[W: Monoid]: Monad[({type f[x] = Writer[W, x]})#f] = new Monad[({type f[x] = Writer[W, x]})#f] {
+    val applicative: Applicative[({type f[x] = Writer[W, x]})#f] = Applicative[({type f[x] = Writer[W, x]})#f]
+    def flatMap[A, B](wa: Writer[W, A])(f: A => Writer[W, B]): Writer[W, B] = wa flatMap f
   }
 }

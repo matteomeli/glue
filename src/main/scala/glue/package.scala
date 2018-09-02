@@ -27,6 +27,9 @@ package object glue {
   type Kleisli[F[_], A, B] = glue.data.Kleisli[F, A, B]
   type OptionT[F[_], A] = glue.data.OptionT[F, A]
   type Reader[R, A] = glue.data.Reader[R, A]
+  type Writer[W, A] = glue.data.Writer[W, A]
+  type StateT[F[_], S, A] = glue.data.StateT[F, S, A]
+  type State[S, A] = glue.data.State[S, A]
 
   val Const = glue.data.Const
   val EitherT = glue.data.EitherT
@@ -36,6 +39,9 @@ package object glue {
   val Kleisli = glue.data.Kleisli
   val OptionT = glue.data.OptionT
   val Reader = glue.data.Reader
+  val Writer = glue.data.Writer
+  val StateT = glue.data.StateT
+  val State = glue.data.State
 
   // Id
   type Id[A] = A
