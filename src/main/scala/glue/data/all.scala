@@ -9,6 +9,7 @@ trait AllFunctions
   with ReaderFunctions
   with WriterTFunctions
   with WriterFunctions
+  with StateTFunctions
   with StateFunctions
 
 trait AllImplicits
@@ -21,6 +22,7 @@ trait AllImplicits
   with ReaderImplicits
   with WriterTImplicits
   with WriterImplicits
+  with StateTImplicits
   with StateImplicits
 
 object functions extends AllFunctions
