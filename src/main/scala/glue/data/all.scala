@@ -7,9 +7,9 @@ trait AllFunctions
   with IndexedStateTFunctions
   with OptionTFunctions
   with ReaderFunctions
-  with StateFunctions
   with WriterTFunctions
   with WriterFunctions
+  with StateFunctions
 
 trait AllImplicits
   extends ConstImplicits
@@ -19,9 +19,9 @@ trait AllImplicits
   with IndexedStateTImplicits
   with OptionTImplicits
   with ReaderImplicits
-  with StateImplicits
   with WriterTImplicits
   with WriterImplicits
+  with StateImplicits
 
 object functions extends AllFunctions
 
