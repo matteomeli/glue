@@ -171,7 +171,7 @@ trait StateTImplicits extends IndexedStateTImplicits
       }
     }
 
-  implicit def indexedStateTIsMonad[F[_]: Monad: Applicative: Functor, S]: Monad[({type f[x] = StateT[F, S, x]})#f] =
+  implicit def stateTIsMonad[F[_]: Monad: Applicative: Functor, S]: Monad[({type f[x] = StateT[F, S, x]})#f] =
     new Monad[({type f[x] = StateT[F, S, x]})#f] {
       val applicative: Applicative[({type f[x] = StateT[F, S, x]})#f] = Applicative[({type f[x] = StateT[F, S, x]})#f]
       def flatMap[A, B](sa: StateT[F, S, A])(f: A => StateT[F, S, B]): StateT[F, S, B] = sa flatMap f
