@@ -6,7 +6,7 @@ lazy val root = (project in file(".")).
       organization := "io.github.matteomeli",
       organizationName := "matteomeli",
       scalaVersion := "2.12.6",
-      version      := "0.2.2"
+      version      := "0.3.0"
     )),
     name := "glue",
     libraryDependencies ++= Seq(
