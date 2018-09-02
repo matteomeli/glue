@@ -92,6 +92,7 @@ trait Monad[F[_]] {
 
 Future work includes:
 
+* Stack safety for Monad.flatMap (see [Stack Safety for Free](http://functorial.com/stack-safety-for-free/index.pdf) by Phil Freeman)
 * Bifunctor
 * Bifoldable
 * Bitraverse
