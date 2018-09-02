@@ -31,6 +31,6 @@ object functions extends AllFunctions
 
 object syntax extends AllSyntax
 
-object implicits extends Hierarchy with AllImplicits
+object implicits extends Hierarchy with AllImplicits with IdImplicits
 
 object all extends Hierarchy with AllFunctions with AllSyntax with AllImplicits

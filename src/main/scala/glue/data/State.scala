@@ -1,7 +1,7 @@
 package glue
 package data
 
-import glue.typeclass.{Applicative, Functor, Monad}
+import Id._
 
 trait IndexedStateFunctions {
   def constantIndexedState[S1, S2, A](a: A, s: => S2): IndexedState[S1, S2, A] =

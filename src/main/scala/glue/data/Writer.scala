@@ -1,12 +1,9 @@
 package glue
 package data
 
-import glue.typeclass.{Applicative, Functor, Monad, Monoid}
+import Id._
 
 trait WriterFunctions {
-  import glue.implicits._
-
-  def apply[W, A](wa: (W, A)): Writer[W, A] = WriterT[Id, W, A](wa)
   def writer[W, A](w: W, a: A): Writer[W, A] = Writer((w, a))
   def tell[W](w: W): Writer[W, Unit] = WriterT.tell[Id, W](w)
   def value[W: Monoid, A](a: A): Writer[W, A] = WriterT.value(a)

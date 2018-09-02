@@ -85,6 +85,7 @@ trait ApplicativeSyntax {
       // it will issue a warning about ev being unused.
       // If -Xfatal-warnings is used, compilation will fail.
       // The following line allows compilation under those two flags.
+      import Id._
       ev.unused
       Applicative[F].apply(self.asInstanceOf[F[B => C]])(fb)
     }

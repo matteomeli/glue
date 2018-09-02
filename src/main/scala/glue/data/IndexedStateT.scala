@@ -21,6 +21,15 @@ case class IndexedStateT[F[_], S, T, A](runF: F[S => F[(T, A)]]) {
 
   def mapT[G[_]](f: F[S => F[(T, A)]] => G[S => G[(T, A)]]): IndexedStateT[G, S, T, A] = IndexedStateT(f(runF))
 
+  // TODO: Implement generically from State provided map2 look something like this:
+  //def map2[B, C](sb: State[S, B])(f: (A, B) => C): State[S, C] = State { s =>
+  //  val (s1, a) = run(s)
+  //  val (s2, b) = sb.run(s1)
+  //  (s2, f(a, b))
+  //}
+  //def map2[S, A, B, C](s1: State[S, A], s2: State[S, B])(f: (A, B) => C): State[S, C] = s1.map2(s2)(f)
+  //def sequence[S, A](as: List[State[S, A]]): State[S, List[A]] = as.foldRight[State[S, List[A]]](init(List())) { (s, l) => s.map2(l)(_ :: _) }
+
   def flatMap[U, B](f: A => IndexedStateT[F, T, U, B])(implicit F: Monad[F]): IndexedStateT[F, S, U, B] = IndexedStateT {
     F.map(runF) { sfta =>
       sfta andThen { fta =>

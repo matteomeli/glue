@@ -4,14 +4,16 @@ package typeclass
 import glue.data.{Const, Identity, State}
 import glue.data.Identity.implicits._
 
-import Monoid.implicits._
-
 import State._
+import Id._
+import Monoid.implicits._
 import State.implicits._
 
 import glue.NaturalTransformation
 
 trait Traverse[F[_]] { self =>
+  //import glue.implicits._
+
   val functor: Functor[F]
   val foldable: Foldable[F]
 
@@ -118,6 +120,7 @@ trait TraverseSyntax {
   implicit class TraverseOps[F[_]: Traverse, A](self: F[A]) {
     def traverse[G[_]: Applicative, B](f: A => G[B]): G[F[B]] = Traverse[F].traverse(self)(f)
     def sequence[G[_]: Applicative, B](implicit ev: A <:< G[B]): G[F[B]] = {
+      import Id._
       ev.unused
       Traverse[F].sequence(self.asInstanceOf[F[G[B]]])
     }

@@ -100,6 +100,7 @@ trait MonadSyntax {
     def seq[B](mb: F[B]): F[B] = Monad[F].seq(self, mb)
     def map[B](f: A => B): F[B] = Monad[F].map(self)(f)
     def apply[B, C](mb: F[B])(implicit ev: A <:< B => C): F[C] = {
+      import Id._
       ev.unused
       Monad[F].apply(self.asInstanceOf[F[B => C]])(mb)
     }

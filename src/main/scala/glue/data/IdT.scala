@@ -1,6 +1,8 @@
 package glue
 package data
 
+import Id.Id
+
 case class IdT[F[_], A](run: F[Id[A]]) {
   def map[B](f: A => B)(implicit F: Functor[F]): IdT[F, B] = IdT(F.map(run)(f))
 

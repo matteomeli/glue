@@ -1,6 +1,8 @@
 package glue
 package data
 
+import Id._
+
 trait ReaderFunctions {
   def apply[A, B](f: A => B): Reader[A, B] = ReaderT[Id, A, B](f)
   def read[R]: Reader[R, R] = ReaderT[Id, R, R](identity)

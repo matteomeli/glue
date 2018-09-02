@@ -1,6 +1,8 @@
 package glue
 
-package object data {
+import Id.Id
+
+package object data {  
   type ReaderT[F[_], A, B] = Kleisli[F, A, B]
   val ReaderT = Kleisli
 
@@ -11,6 +13,8 @@ package object data {
 
   type Writer[W, A] = WriterT[Id, W, A]
   object Writer extends WriterFunctions {
+    def apply[W, A](wa: (W, A)): Writer[W, A] = WriterT[Id, W, A](wa)
+    
     object implicits extends WriterImplicits
   }
 
