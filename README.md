@@ -8,7 +8,7 @@ To get started with SBT, simply add the following to your `build.sbt` file:
 
 ```scala
 resolvers += Resolver.bintrayRepo("matteomeli", "maven")
-libraryDependencies += "io.github.matteomeli" %% "glue" % "0.2.2"
+libraryDependencies += "io.github.matteomeli" %% "glue" % "0.3.0"
 ```
 
 ## Philosophy
