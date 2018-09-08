@@ -44,3 +44,13 @@ trait IOImplicits {
     def flatMap[A, B](ioa: IO[A])(f: A => IO[B]): IO[B] = ioa flatMap f
   }
 }
+
+object IOTest {
+  // This example demonstrate how IO overflows the stack
+  import scala.io.StdIn.readLine
+  def ReadLine: IO[String] = IO { readLine }
+  def PrintLine(msg: String): IO[Unit] = IO { println(msg) }
+  import IO.implicits._
+  val foreverMore = Monad[IO].forever(PrintLine("More."))
+  //foreverMore.run
+}
