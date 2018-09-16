@@ -1,5 +1,5 @@
 package glue
-package free
+package effect
 
 sealed trait Free[F[_], A] {
   import Free._
@@ -44,13 +44,16 @@ object Free extends FreeFunctions {
   def runM[F[_], A](fa: Free[F, A])(implicit F: Monad[F]): F[A] = step(fa) match {
     case Pure(a) => F.pure(a)
     case Effect(e) => e
-    case Chain(x, f) => x match {
-      case Effect(e) => Monad[F].flatMap(e) { a => runM(f(a)) }
-      case _ => sys.error("Impossible since `step` eliminate these cases.")
-    }
+    case Chain(Effect(e), f) => Monad[F].flatMap(e) { a => runM(f(a)) }
+    case _ => sys.error("Impossible since `step` eliminate these cases.")
   }
 
-  def runFree[F[_], G[_], A](fa: Free[F, A])(k: NaturalTransformation[F, G])(implicit G: Monad[G]): G[A] = ???
+  def runFree[F[_], G[_], A](fa: Free[F, A])(k: NaturalTransformation[F, G])(implicit G: Monad[G]): G[A] = step(fa) match {
+    case Pure(a) => G.unit(a)
+    case Effect(e) => k(e)
+    case Chain(Effect(e), f) => G.flatMap(k(e)) { a => runFree(f(a))(k) }
+    case _ => sys.error("Impossible since `step` eliminates these cases.")
+  }
 
   object implicits extends FreeImplicits
 }
