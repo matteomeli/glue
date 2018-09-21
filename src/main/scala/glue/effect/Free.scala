@@ -55,6 +55,16 @@ object Free extends FreeFunctions {
     case _ => sys.error("Impossible since `step` eliminates these cases.")
   }
 
+  def translate[F[_], G[_], A](f: Free[F, A])(k: NaturalTransformation[F, G]): Free[G, A] = {
+    import implicits._
+    type FreeG[Z] = Free[G, Z]
+    val K: NaturalTransformation[F, FreeG] =
+      new NaturalTransformation[F, FreeG] {
+        def apply[Z](f: F[Z]): Free[G, Z] = Effect(k(f))
+      }
+    runFree(f)(K)(Monad[FreeG])
+  }
+
   object implicits extends FreeImplicits
 }
 
@@ -67,12 +77,12 @@ trait FreeFunctions {
 }
 
 trait FreeImplicits {
-  implicit def freeFunctor[F[_]]: Functor[({type f[x] = Free[F, x]})#f] =
+  private implicit def freeFunctor[F[_]]: Functor[({type f[x] = Free[F, x]})#f] =
     new Functor[({type f[x] = Free[F, x]})#f] {
       def map[A, B](v: Free[F, A])(f: A => B): Free[F, B] = v map f
     }
 
-  implicit def freeApplicative[F[_]]: Applicative[({type f[x] = Free[F, x]})#f] =
+  private implicit def freeApplicative[F[_]]: Applicative[({type f[x] = Free[F, x]})#f] =
     new Applicative[({type f[x] = Free[F, x]})#f] {
       val functor: Functor[({type f[x] = Free[F, x]})#f] = Functor[({type f[x] = Free[F, x]})#f]
       def pure[A](a: => A): Free[F, A] = Pure(a)
