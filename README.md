@@ -98,19 +98,15 @@ Future work includes:
 * Bitraverse
 * Cokleisli
 * Comonad
-* MonadError, MonadPlus, MonadRec
+* MTL-style: MonadError, MonadPlus, MonadRec
 * Alternative
 * Yoneda, Coyoneda
-* Free
-* Par
 * ST, STRef, STArray
-* IO
+* Asynchronous IO
 * Streaming IO
 * Arrows
-* Improved MTL-style support
 
 Future related work includes:
-* Parallel
 * Lenses
 * Zipper
 * Parser
