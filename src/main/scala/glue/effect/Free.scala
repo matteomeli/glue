@@ -8,10 +8,9 @@ sealed trait Free[F[_], A] {
   def flatMap[B](f: A => Free[F, B]): Free[F, B] = Chain(this, f)
   def applyF[B](f: Free[F, A => B]): Free[F, B] = flatMap { a => f.map(_(a)) }
 
-  def run(implicit ev: Free[F, A] =:= Trampoline[A]): A = runTrampoline(ev(this))
-
   def step: Free[F, A] = Free.step(this)
 
+  def run(implicit ev: Free[F, A] =:= Trampoline[A]): A = Free.run(ev(this))
   def runM(implicit F: Monad[F]): F[A] = Free.runM(this)
 }
 
@@ -21,16 +20,25 @@ case class Chain[F[_], A0, A](v: Free[F, A0], f: A0 => Free[F, A]) extends Free[
 
 object Free extends FreeFunctions {
   type Trampoline[A] = Free[Function0, A]
+
+  // The IO type: for now only provides trampolined sequential execution (stack safe)
+  // TODO: Add asynchronous execution, using an F that provides primitives for parallelism, 
+  // i.e. wraps Future and providesasynchronous reads and writes.
+  // Then for every set of I/O operations - file access, database access, network, stdin/stdout in console -
+  // we just have to provide an ADT representing the operations, say F. For type F, we could generate
+  // a free monad Free[F, A] in which to write our `programs`. These programs are just descriptions,
+  // they can be tested individually and then compiled down to our final lower level type IO 
+  // supporting trampolined and asynchronous execution.
   type IO[A] = Free.Trampoline[A]
 
   @annotation.tailrec
-  def runTrampoline[A](t: Trampoline[A]): A = t match {
+  def run[A](t: Trampoline[A]): A = t match {
     case Pure(a) => a
     case Effect(e) => e()
     case Chain(x, f) => x match {
-      case Pure(a) => runTrampoline(f(a))
-      case Effect(e) => runTrampoline(f(e()))
-      case Chain(y, g) => runTrampoline(y flatMap (g andThen f))
+      case Pure(a) => run(f(a))
+      case Effect(e) => run(f(e()))
+      case Chain(y, g) => run(y flatMap (g andThen f))
     }
   }
 
