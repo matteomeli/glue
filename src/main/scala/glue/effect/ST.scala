@@ -1,8 +1,6 @@
 package glue
 package effect
 
-import scala.collection.mutable.HashMap
-
 sealed trait ST[S, A] { self =>
   protected def run(s: S): (S, A)
 
@@ -132,6 +130,8 @@ object STArray {
   })
 }
 
+import scala.collection.mutable.HashMap
+
 sealed abstract class STMap[S, K, V] {
   protected val map: HashMap[K, V]
 
@@ -162,7 +162,7 @@ object STMap {
   })
 }
 
-// TODO: REmove this from here and put in as a test/example of usage
+// TODO: Remove this from here and put in as a test/example of usage
 object Quicksort {
   def partition[S](array: STArray[S, Int], l: Int, r: Int, pivot: Int): ST[S, Int] = for {
     vp <- array.read(pivot)
