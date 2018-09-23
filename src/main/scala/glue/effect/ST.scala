@@ -91,8 +91,11 @@ sealed abstract class STArray[S, A: Manifest] {
     }
   }
 
+  def get(index: Int): ST[S, Option[A]] = ST(array.lift(index))
+
   def write(index: Int, a: A): ST[S, Unit] = new ST[S, Unit] {
     def run(s: S): (S, Unit) = {
+      // TODO: This causes an exception if index is out of bounds
       array(index) = a
       (s, ())
     }
