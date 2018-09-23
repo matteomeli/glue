@@ -1,6 +1,8 @@
 package glue
 package effect
 
+import scala.collection.mutable.HashMap
+
 sealed trait ST[S, A] { self =>
   protected def run(s: S): (S, A)
 
@@ -130,6 +132,37 @@ object STArray {
   })
 }
 
+sealed abstract class STMap[S, K, V] {
+  protected val map: HashMap[K, V]
+
+  def size: ST[S, Int] = ST(map.size)
+
+  def contains(k: K): ST[S, Boolean] = ST(map.contains(k))
+
+  def apply(k: K): ST[S, V] = ST(map(k))
+
+  def get(k: K): ST[S, Option[V]] = ST(map.get(k))
+
+  def add(kv: (K, V)): ST[S, Unit] = ST(map += kv)
+
+  def remove(k: K): ST[S, Unit] = ST(map -= k)
+
+  def toList: ST[S, List[(K, V)]] = ST(map.toList)
+
+  def toMap: ST[S, Map[K, V]] = ST(map.toMap)
+}
+
+object STMap {
+  def apply[S, K, V]: ST[S, STMap[S, K, V]] = ST(new STMap[S, K, V] {
+    lazy val map = HashMap.empty[K, V]
+  })
+
+  def fromMap[S, K, V](m: Map[K, V]): ST[S, STMap[S, K, V]] = ST(new STMap[S, K, V] {
+    lazy val map = (HashMap.newBuilder[K, V] ++= m).result
+  })
+}
+
+// TODO: REmove this from here and put in as a test/example of usage
 object Quicksort {
   def partition[S](array: STArray[S, Int], l: Int, r: Int, pivot: Int): ST[S, Int] = for {
     vp <- array.read(pivot)
