@@ -76,7 +76,25 @@ object Free extends FreeFunctions {
   object implicits extends FreeImplicits
 }
 
+object Trampoline {
+  import Free._
+
+  def done[A](a: A): Trampoline[A] = Free.pure[Function0, A](a)
+
+  def suspend[A](a: => Trampoline[A]) = Free.suspend(a)
+
+  def delay[A](a: => A): Trampoline[A] = suspend(done(a))
+
+  object implicits extends TrampolineImplicits
+}
+
 trait FreeFunctions {
+  def pure[F[_], A](a: A): Free[F, A] = Pure[F, A](a)
+
+  def unit[F[_]]: Free[F, Unit] = pure[Id.Id, Unit](()).asInstanceOf[Free[F, Unit]]
+
+  def suspend[F[_], A](fa: => Free[F, A]): Free[F, A] = unit flatMap { _ => fa }
+
   def map[F[_], A, B](v: Free[F, A])(f: A => B): Free[F, B] = v map f
   def flatMap[F[_], A, B](v: Free[F, A])(f: A => Free[F, B]): Free[F, B] = v flatMap f
   def applyF[F[_], A, B](ff: Free[F, A => B])(fa: Free[F, A]): Free[F, B] = fa applyF ff
@@ -87,7 +105,7 @@ trait FreeFunctions {
 trait FreeImplicits {
   private implicit def freeFunctor[F[_]]: Functor[({type f[x] = Free[F, x]})#f] =
     new Functor[({type f[x] = Free[F, x]})#f] {
-      def map[A, B](v: Free[F, A])(f: A => B): Free[F, B] = v map f
+      def map[A, B](fa: Free[F, A])(f: A => B): Free[F, B] = fa map f
     }
 
   private implicit def freeApplicative[F[_]]: Applicative[({type f[x] = Free[F, x]})#f] =
@@ -100,7 +118,29 @@ trait FreeImplicits {
   implicit def freeMonad[F[_]]: Monad[({type f[x] = Free[F, x]})#f] =
     new Monad[({type f[x] = Free[F, x]})#f] {
       val applicative: Applicative[({type f[x] = Free[F, x]})#f] = Applicative[({type f[x] = Free[F, x]})#f]
-      def flatMap[A, B](v: Free[F, A])(f: A => Free[F, B]): Free[F, B] = v flatMap f
+      def flatMap[A, B](fa: Free[F, A])(f: A => Free[F, B]): Free[F, B] = fa flatMap f
+    }
+}
+
+trait TrampolineImplicits {
+  import Free._
+
+  private implicit val trampolineFunctor: Functor[Trampoline] =
+    new Functor[Trampoline] {
+      def map[A, B](ta: Trampoline[A])(f: A => B): Trampoline[B] = ta map f
+    }
+
+  private implicit val trampolineApplicative: Applicative[Trampoline] =
+    new Applicative[Trampoline] {
+      val functor: Functor[Trampoline] = Functor[Trampoline]
+      def pure[A](a: => A): Trampoline[A] = Trampoline.done(a)
+      def apply[A, B](tf: Trampoline[A => B])(fa: Trampoline[A]): Trampoline[B] = fa applyF tf
+    }
+
+  implicit val trampolineMonad: Monad[Trampoline] =
+    new Monad[Trampoline] {
+      val applicative: Applicative[Trampoline] = Applicative[Trampoline]
+      def flatMap[A, B](ta: Trampoline[A])(f: A => Trampoline[B]): Trampoline[B] = ta flatMap f
     }
 }
 
