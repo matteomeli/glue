@@ -1,7 +1,7 @@
 package glue
 package concurrent
 
-import java.util.concurrent.ExecutorService
+import java.util.concurrent.{Executors, ExecutorService, ThreadFactory}
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 
 sealed trait Par[A] {
@@ -16,10 +16,8 @@ object Par {
   case class Async[A](k: (A => Unit) => Unit) extends Par[A]
   case class Delay[A](t: () => Par[A]) extends Par[A]
   case class Chain[A, B](pa: Par[A], f: A => Par[B]) extends Par[B]
-  //case class ChainAsync[A, B](k: (A => Unit) => Unit, f: A => Par[B]) extends Par[B]
-  //case class ChainDelay[A, B](t: () => Par[A], f: A => Par[B]) extends Par[B]
 
-  def apply[A](a: => A)(implicit es: ExecutorService): Par[A] = Async { cb =>
+  def apply[A](a: => A)(implicit es: ExecutorService = ExecutionContext.defaultExecutorService): Par[A] = Async { cb =>
     es.execute { new Runnable { def run = cb(a) } }
   }
 
@@ -31,22 +29,17 @@ object Par {
 
   def delayNow[A](a: => A): Par[A] = delay(now(a))
 
-  def lazyNow[A](a: => A)(implicit es: ExecutorService): Par[A] = fork(now(a))
+  def lazyNow[A](a: => A)(implicit es: ExecutorService = ExecutionContext.defaultExecutorService): Par[A] = fork(now(a))
 
-  def asyncF[A, B](f: A => B)(implicit es: ExecutorService): A => Par[B] = a => lazyNow(f(a))
+  def asyncF[A, B](f: A => B)(implicit es: ExecutorService = ExecutionContext.defaultExecutorService): A => Par[B] = a => lazyNow(f(a))
 
-  def fork[A](pa: => Par[A])(implicit es: ExecutorService): Par[A] = join(Par(pa))
+  def fork[A](pa: => Par[A])(implicit es: ExecutorService = ExecutionContext.defaultExecutorService): Par[A] = join(Par(pa))
 
   def map[A, B](pa: Par[A])(f: A => B): Par[B] = flatMap(pa)(f andThen (now(_)))
 
-  def flatMap[A, B](pa: Par[A])(f: A => Par[B]): Par[B] = /*Chain(pa, f)*/pa match {
-    case Now(a) => Delay(() => f(a))
-    case Delay(t) => Chain(Delay(t), f)
-    case Async(k) => Chain(Async(k), f)
-    case Chain(Now(a), g) => Delay(() => Chain(Now(a), g andThen (_ flatMap f)))
-    case Chain(Delay(t), g) => Delay(() => Chain(Delay(t), g andThen (_ flatMap f)))
-    case Chain(Async(k), g) => Delay(() => Chain(Async(k), g andThen (_ flatMap f)))
-    case Chain(Chain(x, h), g) => Delay(() => Chain(x, h andThen (g andThen (_ flatMap f))))
+  def flatMap[A, B](pa: Par[A])(f: A => Par[B]): Par[B] = pa match {
+    case Chain(Async(k), g) => Chain(Async(k), g andThen (_ flatMap f)) // TODO: without this it doesn't work... why?
+    case _ => Chain(pa, f)
   }
 
   def join[A](pa: Par[Par[A]]): Par[A] = flatMap(pa)(identity)
@@ -90,8 +83,7 @@ object Par {
     }}
   }
 
-  def choose[A, B](pa: Par[A], pb: Par[B]): Par[Either[(A, Par[B]), (Par[A], B)]]
- =
+  def choose[A, B](pa: Par[A], pb: Par[B]): Par[Either[(A, Par[B]), (Par[A], B)]] =
     map(chooseAny(List[Par[Either[A, B]]](map(pa)(Left(_)), map(pb)(Right(_)))).get) {
       (x: (Either[A, B], List[Par[Either[A, B]]])) => x match {
         case (Left(a), h :: _) => Left((a, map(h) {
@@ -114,12 +106,12 @@ object Par {
 
   def sequence[A](as: List[Par[A]]): Par[List[A]] = as.foldRight(now(List[A]())) { map2(_, _) { _ :: _ } }
 
-  def sequenceR[A](as: List[Par[A]])(implicit es: ExecutorService): Par[List[A]] = as match {
+  def sequenceR[A](as: List[Par[A]])(implicit es: ExecutorService = ExecutionContext.defaultExecutorService): Par[List[A]] = as match {
     case Nil => now(Nil)
     case h :: t => map2(h, fork(sequenceR(t)))(_ :: _)
   }
 
-  def sequenceB[A](as: IndexedSeq[Par[A]])(implicit es: ExecutorService): Par[IndexedSeq[A]] = fork {
+  def sequenceB[A](as: IndexedSeq[Par[A]])(implicit es: ExecutorService = ExecutionContext.defaultExecutorService): Par[IndexedSeq[A]] = fork {
     if (as.isEmpty) now(Vector()) 
     else if (as.length == 1) map(as.head)(Vector(_))
     else {
@@ -128,11 +120,11 @@ object Par {
     }
   }
 
-  def parMap[A, B](as: List[A])(f: A => B)(implicit es: ExecutorService): Par[List[B]] = fork {
+  def parMap[A, B](as: List[A])(f: A => B)(implicit es: ExecutorService = ExecutionContext.defaultExecutorService): Par[List[B]] = fork {
     sequence(as map asyncF(f))
   }
 
-  def parFilter[A](as: List[A])(f: A => Boolean)(implicit es: ExecutorService): Par[List[A]] = fork {
+  def parFilter[A](as: List[A])(f: A => Boolean)(implicit es: ExecutorService = ExecutionContext.defaultExecutorService): Par[List[A]] = fork {
     val pars: List[Par[Option[A]]] = as map (asyncF(a => if (f(a)) Some(a) else None))
     map(sequence(pars))(_.flatten)
   }
@@ -151,7 +143,6 @@ object Par {
   @annotation.tailrec
   final def step[A](pa: Par[A]): Par[A] = pa match {
     case Delay(t) => step(t())
-    //case ChainDelay(t, f) => step(t() flatMap f)
     case Chain(Now(a), f) => step(f(a))
     case Chain(Delay(t), f) => step(t() flatMap f)
     case Chain(Chain(x, f), g) => step(x flatMap (f andThen g))
@@ -161,7 +152,6 @@ object Par {
   def runAsync[A](pa: Par[A])(cb: A => Unit): Unit = step(pa) match {
     case Now(a) => cb(a)
     case Async(k) => k(cb)
-    //case ChainAsync(k, f) => k { a => runAsync(f(a))(cb) }
     case Chain(Async(k), f) => k { a => runAsync(f(a))(cb) }
     case _ => sys.error("Impossible since `step` eliminate these cases.")
   }
@@ -180,6 +170,21 @@ object Par {
   object syntax extends ParSyntax
 }
 
+object ExecutionContext {
+  private val defaultDaemonThreadFactory: ThreadFactory = new ThreadFactory {
+    val defaultThreadFactory = Executors.defaultThreadFactory()
+    def newThread(r: Runnable) = {
+      val t = defaultThreadFactory.newThread(r)
+      t.setDaemon(true)
+      t
+    }
+  }
+
+  val defaultExecutorService: ExecutorService = {
+    Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors, defaultDaemonThreadFactory)
+  }
+}
+
 trait ParSyntax {
   implicit class ParOps[A](self: Par[A]) {
     def map[B](f: A => B): Par[B] = Par.map(self)(f)
@@ -191,11 +196,7 @@ trait ParSyntax {
 }
 
 object ParDemo {
-  import java.util.concurrent.Executors
-
   def run(): Unit = {
-    implicit val es: ExecutorService = Executors.newFixedThreadPool(2)
-
     val threadId: Long = Thread.currentThread().getId()
     println(s"Thread main ${threadId}")
 
