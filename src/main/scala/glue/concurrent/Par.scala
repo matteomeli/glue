@@ -38,8 +38,13 @@ object Par {
   def map[A, B](pa: Par[A])(f: A => B): Par[B] = flatMap(pa)(f andThen (now(_)))
 
   def flatMap[A, B](pa: Par[A])(f: A => Par[B]): Par[B] = pa match {
-    case Chain(Async(k), g) => Chain(Async(k), g andThen (_ flatMap f)) // TODO: without this it doesn't work... why?
-    case _ => Chain(pa, f)
+    case Now(a) => Delay(() => f(a))
+    case Delay(t) => Chain(Delay(t), f)
+    case Async(k) => Chain(Async(k), f)
+    case Chain(Now(a), g) => Delay(() => Chain(Now(a), g andThen (_ flatMap f)))
+    case Chain(Delay(t), g) => Delay(() => Chain(Delay(t), g andThen (_ flatMap f)))
+    case Chain(Async(k), g) => Delay(() => Chain(Async(k), g andThen (_ flatMap f)))
+    case Chain(Chain(x, h), g) => Delay(() => Chain(x, h andThen (g andThen (_ flatMap f))))
   }
 
   def join[A](pa: Par[Par[A]]): Par[A] = flatMap(pa)(identity)
@@ -216,6 +221,6 @@ object ParDemo {
 
     val pc = Par.parMap2(pa, pb)(_ + _)
 
-    println(s"Thread main ${threadId}: ${pc.run}\n")
+    println(s"Thread main ${threadId}: ${pc.run}")
   }
 }
