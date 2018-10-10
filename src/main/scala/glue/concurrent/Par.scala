@@ -81,14 +81,14 @@ object Par {
           if (won.compareAndSet(false, true)) cb((a, pars.collect { case (i, _, rf, _, _) if i != ind => rf }))
           else {}
 
-          if (listener.compareAndSet(null, _ => sys.error("impossible, since there can only be one runner of chooseAny"))) {}
+          if (listener.compareAndSet(null, _ => ())) {}
           else listener.get.apply(a)
         }
       }
     }}
   }
 
-  def choose[A, B](pa: Par[A], pb: Par[B]): Par[Either[(A, Par[B]), (Par[A], B)]] =
+  def chooseViaChooseAny[A, B](pa: Par[A], pb: Par[B]): Par[Either[(A, Par[B]), (Par[A], B)]] =
     map(chooseAny(List[Par[Either[A, B]]](map(pa)(Left(_)), map(pb)(Right(_)))).get) {
       (x: (Either[A, B], List[Par[Either[A, B]]])) => x match {
         case (Left(a), h :: _) => Left((a, map(h) {
@@ -102,6 +102,49 @@ object Par {
         case _ => sys.error("error")
       }
     }
+
+  def choose[A, B](pa: Par[A], pb: Par[B]): Par[Either[(A, Par[B]), (Par[A], B)]] = {
+    def residual[A](p: Par[A]): (Par[A], AtomicReference[A], AtomicReference[A => Unit]) = {
+      val used = new AtomicBoolean(false)
+      val result = new AtomicReference[A]
+      val listener = new AtomicReference[A => Unit](null)
+      val residual = Async { (cb: A => Unit) =>
+        if (used.compareAndSet(false, true)) {
+          if (listener.compareAndSet(null, cb)) {}
+          else cb(result.get)
+        }
+        else runAsync(p)(cb)
+      }
+      (residual, result, listener)
+    }
+
+    Async { cb =>
+      val won = new AtomicBoolean(false)
+
+      val (ra, resultA, listenerA) = residual(pa)
+      val (rb, resultB, listenerB) = residual(pb)
+
+      runAsync(pa) { a =>
+        resultA.set(a)
+
+        if (won.compareAndSet(false, true)) cb(Left((a, rb)))
+        else {}
+
+        if (listenerA.compareAndSet(null, _ => ())) {}
+        else listenerA.get.apply(a)
+      }
+
+      runAsync(pb) { b =>
+        resultB.set(b)
+
+        if (won.compareAndSet(false, true)) cb(Right((ra, b)))
+        else {}
+
+        if (listenerB.compareAndSet(null, _ => sys.error("unreachable"))) {}
+        else listenerB.get.apply(b)
+      }
+    }
+  }
 
   // Parallel version for map2
   def parMap2[A, B, C](pa: Par[A], pb: Par[B])(f: (A, B) => C): Par[C] = flatMap(choose(pa, pb)) {
