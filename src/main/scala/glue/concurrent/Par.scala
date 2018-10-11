@@ -55,7 +55,72 @@ object Par {
     b <- pb
   } yield f(a, b)
 
+  // Parallel map2
+  def parMap2[A, B, C](pa: Par[A], pb: Par[B])(f: (A, B) => C): Par[C] = flatMap(choose(pa, pb)) {
+    case Left((a, rb)) => map(rb)(b => f(a, b))
+    case Right((ra, b)) => map(ra)(a => f(a, b))
+  }
+
+  def both[A, B](pa: Par[A], pb: Par[B]): Par[(A, B)] = parMap2(pa, pb)((_, _))
+
+  // chooseAny and choose can be implemented in terms of each other
   def chooseAny[A](as: List[Par[A]]): Option[Par[(A, List[Par[A]])]] = as match {
+    case Nil => None
+    case h :: Nil => Some { Async { cb =>
+      runAsync(h) { a => cb((a, Nil)) }
+    }}
+    case h :: t => chooseAny(t).map { pt =>
+      flatMap(choose(h, pt)) {
+        case Left((a, pal)) => map(pal) { case (_, l) => (a, l) }
+        case Right((pa, al)) => Now((al._1, pa :: al._2))
+      }
+    }
+  }
+
+  def choose[A, B](pa: Par[A], pb: Par[B]): Par[Either[(A, Par[B]), (Par[A], B)]] = {
+    Async { cb =>
+      val won = new AtomicBoolean(false)
+
+      val (ra, resultA, listenerA) = residual(pa)
+      val (rb, resultB, listenerB) = residual(pb)
+
+      runAsync(pa) { a =>
+        resultA.set(a)
+
+        if (won.compareAndSet(false, true)) cb(Left((a, rb)))
+        else {}
+
+        if (listenerA.compareAndSet(null, _ => ())) {}
+        else listenerA.get.apply(a)
+      }
+
+      runAsync(pb) { b =>
+        resultB.set(b)
+
+        if (won.compareAndSet(false, true)) cb(Right((ra, b)))
+        else {}
+
+        if (listenerB.compareAndSet(null, _ => sys.error("unreachable"))) {}
+        else listenerB.get.apply(b)
+      }
+    }
+  }
+
+  private def residual[A](p: Par[A]): (Par[A], AtomicReference[A], AtomicReference[A => Unit]) = {
+    val used = new AtomicBoolean(false)
+    val result = new AtomicReference[A]
+    val listener = new AtomicReference[A => Unit](null)
+    val residual = Async { (cb: A => Unit) =>
+      if (used.compareAndSet(false, true)) {
+        if (listener.compareAndSet(null, cb)) {}
+        else cb(result.get)
+      }
+      else runAsync(p)(cb)
+    }
+    (residual, result, listener)
+  }
+
+  def chooseAnyStandalone[A](as: List[Par[A]]): Option[Par[(A, List[Par[A]])]] = as match {
     case Nil => None
     case _ => Some { Async { cb =>
       val won = new AtomicBoolean(false)
@@ -89,7 +154,7 @@ object Par {
   }
 
   def chooseViaChooseAny[A, B](pa: Par[A], pb: Par[B]): Par[Either[(A, Par[B]), (Par[A], B)]] =
-    map(chooseAny(List[Par[Either[A, B]]](map(pa)(Left(_)), map(pb)(Right(_)))).get) {
+    map(chooseAnyStandalone(List[Par[Either[A, B]]](map(pa)(Left(_)), map(pb)(Right(_)))).get) {
       (x: (Either[A, B], List[Par[Either[A, B]]])) => x match {
         case (Left(a), h :: _) => Left((a, map(h) {
           case Right(b) => b
@@ -102,55 +167,6 @@ object Par {
         case _ => sys.error("error")
       }
     }
-
-  def choose[A, B](pa: Par[A], pb: Par[B]): Par[Either[(A, Par[B]), (Par[A], B)]] = {
-    def residual[A](p: Par[A]): (Par[A], AtomicReference[A], AtomicReference[A => Unit]) = {
-      val used = new AtomicBoolean(false)
-      val result = new AtomicReference[A]
-      val listener = new AtomicReference[A => Unit](null)
-      val residual = Async { (cb: A => Unit) =>
-        if (used.compareAndSet(false, true)) {
-          if (listener.compareAndSet(null, cb)) {}
-          else cb(result.get)
-        }
-        else runAsync(p)(cb)
-      }
-      (residual, result, listener)
-    }
-
-    Async { cb =>
-      val won = new AtomicBoolean(false)
-
-      val (ra, resultA, listenerA) = residual(pa)
-      val (rb, resultB, listenerB) = residual(pb)
-
-      runAsync(pa) { a =>
-        resultA.set(a)
-
-        if (won.compareAndSet(false, true)) cb(Left((a, rb)))
-        else {}
-
-        if (listenerA.compareAndSet(null, _ => ())) {}
-        else listenerA.get.apply(a)
-      }
-
-      runAsync(pb) { b =>
-        resultB.set(b)
-
-        if (won.compareAndSet(false, true)) cb(Right((ra, b)))
-        else {}
-
-        if (listenerB.compareAndSet(null, _ => sys.error("unreachable"))) {}
-        else listenerB.get.apply(b)
-      }
-    }
-  }
-
-  // Parallel version for map2
-  def parMap2[A, B, C](pa: Par[A], pb: Par[B])(f: (A, B) => C): Par[C] = flatMap(choose(pa, pb)) {
-    case Left((a, rb)) => map(rb)(b => f(a, b))
-    case Right((ra, b)) => map(ra)(a => f(a, b))
-  }
 
   def sequence[A](as: List[Par[A]]): Par[List[A]] = as.foldRight(now(List[A]())) { map2(_, _) { _ :: _ } }
 
@@ -240,30 +256,5 @@ trait ParSyntax {
     def flatMap[B](f: A => Par[B]): Par[B] = Par.flatMap(self)(f)
     def equal(other: Par[A]): Boolean = Par.equal(self, other)
     def run: A = Par.run(self)
-  }
-}
-
-object ParDemo {
-  def run(): Unit = {
-    val threadId: Long = Thread.currentThread().getId()
-    println(s"Thread main ${threadId}")
-
-    val pa = Par {
-      val threadId: Long = Thread.currentThread().getId()
-      println(s"Thread pa ${threadId}")
-      Thread.sleep(5000)
-      println(s"Thread pa done")
-      1
-    }
-    val pb = Par {
-      val threadId: Long = Thread.currentThread().getId()
-      println(s"Thread pb ${threadId}")
-      println(s"Thread pb done")
-      1
-    }
-
-    val pc = Par.parMap2(pa, pb)(_ + _)
-
-    println(s"Thread main ${threadId}: ${pc.run}")
   }
 }
