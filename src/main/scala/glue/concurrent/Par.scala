@@ -27,6 +27,9 @@ object Par {
 
   def async[A](k: (A => Unit) => Unit): Par[A] = Async(k)
 
+  def pure[A](a: A): Par[A] = now(a)
+  def unit[A](a: A): Par[A] = now(a)
+
   def delayNow[A](a: => A): Par[A] = delay(now(a))
 
   def lazyNow[A](a: => A)(implicit es: ExecutorService = ExecutionContext.defaultExecutorService): Par[A] = fork(now(a))
@@ -63,20 +66,6 @@ object Par {
 
   def both[A, B](pa: Par[A], pb: Par[B]): Par[(A, B)] = parMap2(pa, pb)((_, _))
 
-  // chooseAny and choose can be implemented in terms of each other
-  def chooseAny[A](as: List[Par[A]]): Option[Par[(A, List[Par[A]])]] = as match {
-    case Nil => None
-    case h :: Nil => Some { Async { cb =>
-      runAsync(h) { a => cb((a, Nil)) }
-    }}
-    case h :: t => chooseAny(t).map { pt =>
-      flatMap(choose(h, pt)) {
-        case Left((a, pal)) => map(pal) { case (_, l) => (a, l) }
-        case Right((pa, al)) => Now((al._1, pa :: al._2))
-      }
-    }
-  }
-
   def choose[A, B](pa: Par[A], pb: Par[B]): Par[Either[(A, Par[B]), (Par[A], B)]] = {
     Async { cb =>
       val won = new AtomicBoolean(false)
@@ -102,6 +91,20 @@ object Par {
 
         if (listenerB.compareAndSet(null, _ => sys.error("unreachable"))) {}
         else listenerB.get.apply(b)
+      }
+    }
+  }
+
+  // chooseAny and choose can be implemented in terms of each other
+  def chooseAny[A](as: List[Par[A]]): Option[Par[(A, List[Par[A]])]] = as match {
+    case Nil => None
+    case h :: Nil => Some { Async { cb =>
+      runAsync(h) { a => cb((a, Nil)) }
+    }}
+    case h :: t => chooseAny(t).map { pt =>
+      flatMap(choose(h, pt)) {
+        case Left((a, pal)) => map(pal) { case (_, l) => (a, l) }
+        case Right((pa, al)) => Now((al._1, pa :: al._2))
       }
     }
   }
@@ -168,6 +171,7 @@ object Par {
       }
     }
 
+  // Each 'a' in as is evaluated sequentially
   def sequence[A](as: List[Par[A]]): Par[List[A]] = as.foldRight(now(List[A]())) { map2(_, _) { _ :: _ } }
 
   def sequenceR[A](as: List[Par[A]])(implicit es: ExecutorService = ExecutionContext.defaultExecutorService): Par[List[A]] = as match {
@@ -258,3 +262,12 @@ trait ParSyntax {
     def run: A = Par.run(self)
   }
 }
+
+// TODO: Implement runToFuture, which convertes Par[A] to Future[A]
+// TODO: Move need to an implicit ExecutorService only when calling runAsync
+// TODO: handle exceptions
+// TODO: handle timeouts
+// TODO: handle cancelable
+// TODO: Use trampoline
+// TODO: Implement typeclasses instances
+// TODO: Implement nondeterministic (parallel) version of sequence (gather, aggregate)
