@@ -5,20 +5,75 @@ import java.util.concurrent.{Executors, ExecutorService, ThreadFactory}
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 
 sealed trait Par[A] {
-  def map[B](f: A => B): Par[B] = Par.map(this)(f)
-  def flatMap[B](f: A => Par[B]): Par[B] = Par.flatMap(this)(f)
+  import Par._
+
+  def map[B](f: A => B): Par[B] = this flatMap (f andThen (now(_)))
+
+  def flatMap[B](f: A => Par[B]): Par[B] = this match {
+    case Now(a) => Delay(() => f(a))
+    case Delay(t) => Chain(Delay(t), f)
+    case Async(k) => Chain(Async(k), f)
+    case Chain(Now(a), g) => Delay(() => Chain(Now(a), g andThen (_ flatMap f)))
+    case Chain(Delay(t), g) => Delay(() => Chain(Delay(t), g andThen (_ flatMap f)))
+    case Chain(Async(k), g) => Delay(() => Chain(Async(k), g andThen (_ flatMap f)))
+    case Chain(Chain(x, h), g) => Delay(() => Chain(x, h andThen (g andThen (_ flatMap f))))
+  }
+
   def fork: Par[A] = Par.fork(this)
+
   def map2[B, C](other: Par[B])(f: (A, B) => C): Par[C] = Par.map2(this, other)(f)
-  def both[B, C](other: Par[B]): Par[(A, B)] = Par.both(this, other)
-  def zip[B, C](other: Par[B]): Par[(A, B)] = Par.zip(this, other)
   def parMap2[B, C](other: Par[B])(f: (A, B) => C): Par[C] = Par.parMap2(this, other)(f)
+  def both[B, C](other: Par[B]): Par[(A, B)] = Par.both(this, other)
   def zipWith[B, C](other: Par[B])(f: (A, B) => C): Par[C] = Par.zipWith(this, other)(f)
-  def runAsync(cb: A => Unit): Unit = Par.runAsync(this)(cb)
-  def runAsyncCancelable(cb: A => Unit, cancel: AtomicBoolean): Unit = Par.runAsyncCancelable(this)(cb, cancel)
-  def run: A = Par.run(this)
+  def zip[B, C](other: Par[B]): Par[(A, B)] = Par.zip(this, other)
+
+  def isEqual[A](other: Par[A]): Par[Boolean] = zipWith(other)(_ == _)
+
+  @annotation.tailrec
+  final def step: Par[A] = this match {
+    case Delay(t) => t().step
+    case Chain(Now(a), f) => f(a).step
+    case Chain(Delay(t), f) => (t() flatMap f).step
+    case Chain(Chain(x, f), g) => (x flatMap (f andThen g)).step
+    case _ => this
+  }
+
+  @annotation.tailrec
+  final def stepCancelable(cancel: AtomicBoolean): Par[A] = if (cancel.get) this else this match {
+    case Delay(t) => t().stepCancelable(cancel)
+    case Chain(Now(a), f) => f(a).stepCancelable(cancel)
+    case Chain(Delay(t), f) => (t() flatMap f).stepCancelable(cancel)
+    case Chain(Chain(x, f), g) => (x flatMap (f andThen g)).stepCancelable(cancel)
+    case _ => this
+  }
+
+  def runAsync(cb: A => Unit): Unit = this.step match {
+    case Now(a) => cb(a)
+    case Async(k) => k(cb)
+    case Chain(Async(k), f) => k { a => f(a).runAsync(cb) }
+    case _ => sys.error("Impossible since `step` eliminate these cases.")
+  }
+
+  def runAsyncCancelable(cb: A => Unit, cancel: AtomicBoolean): Unit = this.stepCancelable(cancel) match {
+    case _ if cancel.get => ()
+    case Now(a) => cb(a)
+    case Async(k) => k { a => if (!cancel.get) cb(a) else () }
+    case Chain(Async(k), f) => k { a => if (!cancel.get) f(a).runAsyncCancelable(cb, cancel) else () }
+  }
+
+  def run: A = this match {
+    case Now(a) => a
+    case _ => {
+      val latch = new java.util.concurrent.CountDownLatch(1)
+      @volatile var result: Option[A] = None
+      this.runAsync { a => result = Some(a); latch.countDown }
+      latch.await
+      result.get
+    }
+  }
 }
 
-object Par {
+object Par extends ParFunctions {
   case class Now[A](value: A) extends Par[A]
   case class Async[A](k: (A => Unit) => Unit) extends Par[A]
   case class Delay[A](t: () => Par[A]) extends Par[A]
@@ -42,20 +97,32 @@ object Par {
 
   def asyncF[A, B](f: A => B)(implicit es: ExecutorService = ExecutionContext.defaultExecutorService): A => Par[B] = a => lazyNow(f(a))
 
-  def map[A, B](pa: Par[A])(f: A => B): Par[B] = flatMap(pa)(f andThen (now(_)))
+  object syntax extends ParSyntax
 
-  def flatMap[A, B](pa: Par[A])(f: A => Par[B]): Par[B] = pa match {
-    case Now(a) => Delay(() => f(a))
-    case Delay(t) => Chain(Delay(t), f)
-    case Async(k) => Chain(Async(k), f)
-    case Chain(Now(a), g) => Delay(() => Chain(Now(a), g andThen (_ flatMap f)))
-    case Chain(Delay(t), g) => Delay(() => Chain(Delay(t), g andThen (_ flatMap f)))
-    case Chain(Async(k), g) => Delay(() => Chain(Async(k), g andThen (_ flatMap f)))
-    case Chain(Chain(x, h), g) => Delay(() => Chain(x, h andThen (g andThen (_ flatMap f))))
+  object implicits extends ParImplicits
+}
+
+object ExecutionContext {
+  private val defaultDaemonThreadFactory: ThreadFactory = new ThreadFactory {
+    val defaultThreadFactory = Executors.defaultThreadFactory()
+    def newThread(r: Runnable) = {
+      val t = defaultThreadFactory.newThread(r)
+      t.setDaemon(true)
+      t
+    }
   }
 
-  def fork[A](pa: => Par[A])(implicit es: ExecutorService = ExecutionContext.defaultExecutorService): Par[A] = join(Par(pa))
+  val defaultExecutorService: ExecutorService = {
+    Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors, defaultDaemonThreadFactory)
+  }
+}
 
+trait ParFunctions {
+  import Par._
+
+  def map[A, B](pa: Par[A])(f: A => B): Par[B] = pa map f
+  def flatMap[A, B](pa: Par[A])(f: A => Par[B]): Par[B] = pa flatMap f
+  def fork[A](pa: => Par[A])(implicit es: ExecutorService = ExecutionContext.defaultExecutorService): Par[A] = join(Par(pa))
   def join[A](pa: Par[Par[A]]): Par[A] = flatMap(pa)(identity)
 
   // Not parallel
@@ -70,11 +137,19 @@ object Par {
     case Right((ra, b)) => map(ra)(a => f(a, b))
   }
 
-  def zipWith[A, B, C](pa: Par[A], pb: Par[B])(f: (A, B) => C): Par[C] = parMap2(pa, pb)(f)
-
   def both[A, B](pa: Par[A], pb: Par[B]): Par[(A, B)] = parMap2(pa, pb)((_, _))
 
+  def zipWith[A, B, C](pa: Par[A], pb: Par[B])(f: (A, B) => C): Par[C] = parMap2(pa, pb)(f)
+
   def zip[A, B](pa: Par[A], pb: Par[B]): Par[(A, B)] = both(pa, pb)
+
+  def isEqual[A](pa1: Par[A], pa2: Par[A]): Par[Boolean] = pa1 isEqual pa2
+
+  def runAsync[A](pa: Par[A])(cb: A => Unit): Unit = pa.runAsync(cb)
+  
+  def runAsyncCancelable[A](pa: Par[A])(cb: A => Unit, cancel: AtomicBoolean): Unit = pa.runAsyncCancelable(cb, cancel)
+
+  def run[A](pa: Par[A]): A = pa.run
 
   def choose[A, B](pa: Par[A], pb: Par[B]): Par[Either[(A, Par[B]), (Par[A], B)]] = {
     Async { cb =>
@@ -190,49 +265,6 @@ object Par {
   def choiceMap[K, V](key: Par[K])(choices: Map[K, Par[V]]): Par[V] =
     flatMap(key) { choices(_) }
 
-  @annotation.tailrec
-  def step[A](pa: Par[A]): Par[A] = pa match {
-    case Delay(t) => step(t())
-    case Chain(Now(a), f) => step(f(a))
-    case Chain(Delay(t), f) => step(t() flatMap f)
-    case Chain(Chain(x, f), g) => step(x flatMap (f andThen g))
-    case _ => pa
-  }
-
-  @annotation.tailrec
-  def stepCancelable[A](pa: Par[A], cancel: AtomicBoolean): Par[A] = if (cancel.get) pa else pa match {
-    case Delay(t) => stepCancelable(t(), cancel)
-    case Chain(Now(a), f) => stepCancelable(f(a), cancel)
-    case Chain(Delay(t), f) => stepCancelable(t() flatMap f, cancel)
-    case Chain(Chain(x, f), g) => stepCancelable(x flatMap (f andThen g), cancel)
-    case _ => pa
-  }
-
-  def runAsyncCancelable[A](pa: Par[A])(cb: A => Unit, cancel: AtomicBoolean): Unit = stepCancelable(pa, cancel) match {
-    case _ if cancel.get => ()
-    case Now(a) => cb(a)
-    case Async(k) => k { a => if (!cancel.get) cb(a) else () }
-    case Chain(Async(k), f) => k { a => if (!cancel.get) runAsyncCancelable(f(a))(cb, cancel) else () }
-  }
-
-  def runAsync[A](pa: Par[A])(cb: A => Unit): Unit = step(pa) match {
-    case Now(a) => cb(a)
-    case Async(k) => k(cb)
-    case Chain(Async(k), f) => k { a => runAsync(f(a))(cb) }
-    case _ => sys.error("Impossible since `step` eliminate these cases.")
-  }
-
-  def run[A](pa: Par[A]): A = pa match {
-    case Now(a) => a
-    case _ => {
-      val latch = new java.util.concurrent.CountDownLatch(1)
-      @volatile var result: Option[A] = None
-      runAsync(pa) { a => result = Some(a); latch.countDown }
-      latch.await
-      result.get
-    }
-  }
-
   // Each 'a' in as is evaluated sequentially
   def sequence[A](as: List[Par[A]]): Par[List[A]] = as.foldRight(now(List[A]())) { map2(_, _) { _ :: _ } }
 
@@ -258,66 +290,43 @@ object Par {
     val pars: List[Par[Option[A]]] = as map (asyncF(a => if (f(a)) Some(a) else None))
     map(sequence(pars))(_.flatten)
   }
-
-  def equal[A](a1: Par[A], a2: Par[A]): Boolean = run(a1) == run(a2)
-
-  object syntax extends ParSyntax
-}
-
-object ExecutionContext {
-  private val defaultDaemonThreadFactory: ThreadFactory = new ThreadFactory {
-    val defaultThreadFactory = Executors.defaultThreadFactory()
-    def newThread(r: Runnable) = {
-      val t = defaultThreadFactory.newThread(r)
-      t.setDaemon(true)
-      t
-    }
-  }
-
-  val defaultExecutorService: ExecutorService = {
-    Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors, defaultDaemonThreadFactory)
-  }
 }
 
 trait ParSyntax {
   implicit class ParOps[A](self: Par[A]) {
-    def map[B](f: A => B): Par[B] = Par.map(self)(f)
-    def map2[B, C](other: Par[B])(f: (A, B) => C): Par[C] = Par.map2(self, other)(f)
-    def flatMap[B](f: A => Par[B]): Par[B] = Par.flatMap(self)(f)
+    def map[B](f: A => B): Par[B] = self map f
+    def flatMap[B](f: A => Par[B]): Par[B] = self flatMap f
     def fork: Par[A] = Par.fork(self)
-    def both[B](other: Par[B]): Par[(A, B)] = Par.both(self, other)
-    def zip[B](other: Par[B]): Par[(A, B)] = Par.zip(self, other)
+
+    def map2[B, C](other: Par[B])(f: (A, B) => C): Par[C] = Par.map2(self, other)(f)
     def parMap2[B, C](other: Par[B])(f: (A, B) => C): Par[C] = Par.parMap2(self, other)(f)
+    def both[B](other: Par[B]): Par[(A, B)] = Par.both(self, other)
     def zipWith[B, C](other: Par[B])(f: (A, B) => C): Par[C] = Par.zipWith(self, other)(f)
-    def equal(other: Par[A]): Boolean = Par.equal(self, other)
+    def zip[B](other: Par[B]): Par[(A, B)] = self zip other
+
+    def isEqual(other: Par[A]): Par[Boolean] = self isEqual other
+
     def runAsync(cb: A => Unit): Unit = Par.runAsync(self)(cb)
     def runAsyncCancelable(cb: A => Unit, cancel: AtomicBoolean): Unit = Par.runAsyncCancelable(self)(cb, cancel)
     def run: A = Par.run(self)
   }
 }
 
-// TODO: Implement runToFuture, which convertes Par[A] to Future[A]
-// TODO: Move need to an implicit ExecutorService only when calling runAsync
-// TODO: handle exceptions
-// TODO: handle timeouts
-// TODO: Use trampoline
-// TODO: Implement typeclasses instances
-// TODO: Implement nondeterministic (parallel) version of sequence (gather, aggregate)
+trait ParImplicits {
+  private implicit val parIsFunctor: Functor[Par] = new Functor[Par] {
+    def map[A, B](pa: Par[A])(f: A => B): Par[B] = pa map f
+  }
 
-object Demo {
-  import Par._
+  implicit val parIsApplicative: Applicative[Par] = new Applicative[Par] {
+    val functor: Functor[Par] = Functor[Par]
 
-  def run(): Unit = {
-    val parA: Par[Int] = Par {
-      throw new Exception("Error.")
-    }
+    def pure[A](a: => A): Par[A] = Par.delayNow(a)
+    def apply[A, B](pf: Par[A => B])(pa: Par[A]): Par[B] = pf flatMap { f => pa map f }
+  }
 
-    val parB: Par[Int] = Par {
-      1
-    }
-
-    val parC = parMap2(parA, parB)(_ + _)
-
-    val _ = parC.run
+  implicit val parIsMonad: Monad[Par] = new Monad[Par] {
+    val applicative: Applicative[Par] = Applicative[Par]
+    
+    def flatMap[A, B](pa: Par[A])(f: A => Par[B]): Par[B] = pa flatMap f
   }
 }
