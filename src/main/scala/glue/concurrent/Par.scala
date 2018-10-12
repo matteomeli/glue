@@ -171,6 +171,58 @@ object Par {
       }
     }
 
+  def choice[A](cond: Par[Boolean])(t: Par[A], f: Par[A]): Par[A] =
+    flatMap(cond) { if (_) t else f }
+
+  def choiceN[A](n: Par[Int])(choices: List[Par[A]]): Par[A] =
+    flatMap(n) { choices(_) }
+  
+  def choiceMap[K, V](key: Par[K])(choices: Map[K, Par[V]]): Par[V] =
+    flatMap(key) { choices(_) }
+
+  @annotation.tailrec
+  def step[A](pa: Par[A]): Par[A] = pa match {
+    case Delay(t) => step(t())
+    case Chain(Now(a), f) => step(f(a))
+    case Chain(Delay(t), f) => step(t() flatMap f)
+    case Chain(Chain(x, f), g) => step(x flatMap (f andThen g))
+    case _ => pa
+  }
+
+  @annotation.tailrec
+  def stepCancelable[A](pa: Par[A], cancel: AtomicBoolean): Par[A] = if (cancel.get) pa else pa match {
+    case Delay(t) => stepCancelable(t(), cancel)
+    case Chain(Now(a), f) => stepCancelable(f(a), cancel)
+    case Chain(Delay(t), f) => stepCancelable(t() flatMap f, cancel)
+    case Chain(Chain(x, f), g) => stepCancelable(x flatMap (f andThen g), cancel)
+    case _ => pa
+  }
+
+  def runAsyncCancelable[A](pa: Par[A])(cb: A => Unit, cancel: AtomicBoolean): Unit = stepCancelable(pa, cancel) match {
+    case _ if cancel.get => ()
+    case Now(a) => cb(a)
+    case Async(k) => k { a => if (!cancel.get) cb(a) else () }
+    case Chain(Async(k), f) => k { a => if (!cancel.get) runAsyncCancelable(f(a))(cb, cancel) else () }
+  }
+
+  def runAsync[A](pa: Par[A])(cb: A => Unit): Unit = step(pa) match {
+    case Now(a) => cb(a)
+    case Async(k) => k(cb)
+    case Chain(Async(k), f) => k { a => runAsync(f(a))(cb) }
+    case _ => sys.error("Impossible since `step` eliminate these cases.")
+  }
+
+  def run[A](pa: Par[A]): A = pa match {
+    case Now(a) => a
+    case _ => {
+      val latch = new java.util.concurrent.CountDownLatch(1)
+      @volatile var result: Option[A] = None
+      runAsync(pa) { a => result = Some(a); latch.countDown }
+      latch.await
+      result.get
+    }
+  }
+
   // Each 'a' in as is evaluated sequentially
   def sequence[A](as: List[Par[A]]): Par[List[A]] = as.foldRight(now(List[A]())) { map2(_, _) { _ :: _ } }
 
@@ -197,43 +249,7 @@ object Par {
     map(sequence(pars))(_.flatten)
   }
 
-  def choice[A](cond: Par[Boolean])(t: Par[A], f: Par[A]): Par[A] =
-    flatMap(cond) { if (_) t else f }
-
-  def choiceN[A](n: Par[Int])(choices: List[Par[A]]): Par[A] =
-    flatMap(n) { choices(_) }
-  
-  def choiceMap[K, V](key: Par[K])(choices: Map[K, Par[V]]): Par[V] =
-    flatMap(key) { choices(_) }
-
   def equal[A](a1: Par[A], a2: Par[A]): Boolean = run(a1) == run(a2)
-
-  @annotation.tailrec
-  final def step[A](pa: Par[A]): Par[A] = pa match {
-    case Delay(t) => step(t())
-    case Chain(Now(a), f) => step(f(a))
-    case Chain(Delay(t), f) => step(t() flatMap f)
-    case Chain(Chain(x, f), g) => step(x flatMap (f andThen g))
-    case _ => pa
-  }
-
-  def runAsync[A](pa: Par[A])(cb: A => Unit): Unit = step(pa) match {
-    case Now(a) => cb(a)
-    case Async(k) => k(cb)
-    case Chain(Async(k), f) => k { a => runAsync(f(a))(cb) }
-    case _ => sys.error("Impossible since `step` eliminate these cases.")
-  }
-
-  def run[A](pa: Par[A]): A = pa match {
-    case Now(a) => a
-    case _ => {
-      val latch = new java.util.concurrent.CountDownLatch(1)
-      @volatile var result: Option[A] = None
-      runAsync(pa) { a => result = Some(a); latch.countDown }
-      latch.await
-      result.get
-    }
-  }
 
   object syntax extends ParSyntax
 }
@@ -259,6 +275,8 @@ trait ParSyntax {
     def map2[B, C](other: Par[B])(f: (A, B) => C): Par[C] = Par.map2(self, other)(f)
     def flatMap[B](f: A => Par[B]): Par[B] = Par.flatMap(self)(f)
     def equal(other: Par[A]): Boolean = Par.equal(self, other)
+    def runAsync(cb: A => Unit): Unit = Par.runAsync(self)(cb)
+    def runAsyncCancelable(cb: A => Unit, cancel: AtomicBoolean): Unit = Par.runAsyncCancelable(self)(cb, cancel)
     def run: A = Par.run(self)
   }
 }
@@ -267,7 +285,24 @@ trait ParSyntax {
 // TODO: Move need to an implicit ExecutorService only when calling runAsync
 // TODO: handle exceptions
 // TODO: handle timeouts
-// TODO: handle cancelable
 // TODO: Use trampoline
 // TODO: Implement typeclasses instances
 // TODO: Implement nondeterministic (parallel) version of sequence (gather, aggregate)
+
+object Demo {
+  import Par._
+
+  def run(): Unit = {
+    val parA: Par[Int] = Par {
+      throw new Exception("Error.")
+    }
+
+    val parB: Par[Int] = Par {
+      1
+    }
+
+    val parC = parMap2(parA, parB)(_ + _)
+
+    val _ = parC.run
+  }
+}
