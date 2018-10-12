@@ -7,7 +7,14 @@ import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 sealed trait Par[A] {
   def map[B](f: A => B): Par[B] = Par.map(this)(f)
   def flatMap[B](f: A => Par[B]): Par[B] = Par.flatMap(this)(f)
+  def fork: Par[A] = Par.fork(this)
+  def map2[B, C](other: Par[B])(f: (A, B) => C): Par[C] = Par.map2(this, other)(f)
+  def both[B, C](other: Par[B]): Par[(A, B)] = Par.both(this, other)
+  def zip[B, C](other: Par[B]): Par[(A, B)] = Par.zip(this, other)
+  def parMap2[B, C](other: Par[B])(f: (A, B) => C): Par[C] = Par.parMap2(this, other)(f)
+  def zipWith[B, C](other: Par[B])(f: (A, B) => C): Par[C] = Par.zipWith(this, other)(f)
   def runAsync(cb: A => Unit): Unit = Par.runAsync(this)(cb)
+  def runAsyncCancelable(cb: A => Unit, cancel: AtomicBoolean): Unit = Par.runAsyncCancelable(this)(cb, cancel)
   def run: A = Par.run(this)
 }
 
@@ -22,21 +29,18 @@ object Par {
   }
 
   def now[A](a: A): Par[A] = Now(a)
+  def pure[A](a: A): Par[A] = now(a)
+  def unit[A](a: A): Par[A] = now(a)
 
   def delay[A](pa: => Par[A]): Par[A] = Delay(() => pa)
 
   def async[A](k: (A => Unit) => Unit): Par[A] = Async(k)
-
-  def pure[A](a: A): Par[A] = now(a)
-  def unit[A](a: A): Par[A] = now(a)
 
   def delayNow[A](a: => A): Par[A] = delay(now(a))
 
   def lazyNow[A](a: => A)(implicit es: ExecutorService = ExecutionContext.defaultExecutorService): Par[A] = fork(now(a))
 
   def asyncF[A, B](f: A => B)(implicit es: ExecutorService = ExecutionContext.defaultExecutorService): A => Par[B] = a => lazyNow(f(a))
-
-  def fork[A](pa: => Par[A])(implicit es: ExecutorService = ExecutionContext.defaultExecutorService): Par[A] = join(Par(pa))
 
   def map[A, B](pa: Par[A])(f: A => B): Par[B] = flatMap(pa)(f andThen (now(_)))
 
@@ -49,6 +53,8 @@ object Par {
     case Chain(Async(k), g) => Delay(() => Chain(Async(k), g andThen (_ flatMap f)))
     case Chain(Chain(x, h), g) => Delay(() => Chain(x, h andThen (g andThen (_ flatMap f))))
   }
+
+  def fork[A](pa: => Par[A])(implicit es: ExecutorService = ExecutionContext.defaultExecutorService): Par[A] = join(Par(pa))
 
   def join[A](pa: Par[Par[A]]): Par[A] = flatMap(pa)(identity)
 
@@ -64,7 +70,11 @@ object Par {
     case Right((ra, b)) => map(ra)(a => f(a, b))
   }
 
+  def zipWith[A, B, C](pa: Par[A], pb: Par[B])(f: (A, B) => C): Par[C] = parMap2(pa, pb)(f)
+
   def both[A, B](pa: Par[A], pb: Par[B]): Par[(A, B)] = parMap2(pa, pb)((_, _))
+
+  def zip[A, B](pa: Par[A], pb: Par[B]): Par[(A, B)] = both(pa, pb)
 
   def choose[A, B](pa: Par[A], pb: Par[B]): Par[Either[(A, Par[B]), (Par[A], B)]] = {
     Async { cb =>
@@ -274,6 +284,11 @@ trait ParSyntax {
     def map[B](f: A => B): Par[B] = Par.map(self)(f)
     def map2[B, C](other: Par[B])(f: (A, B) => C): Par[C] = Par.map2(self, other)(f)
     def flatMap[B](f: A => Par[B]): Par[B] = Par.flatMap(self)(f)
+    def fork: Par[A] = Par.fork(self)
+    def both[B](other: Par[B]): Par[(A, B)] = Par.both(self, other)
+    def zip[B](other: Par[B]): Par[(A, B)] = Par.zip(self, other)
+    def parMap2[B, C](other: Par[B])(f: (A, B) => C): Par[C] = Par.parMap2(self, other)(f)
+    def zipWith[B, C](other: Par[B])(f: (A, B) => C): Par[C] = Par.zipWith(self, other)(f)
     def equal(other: Par[A]): Boolean = Par.equal(self, other)
     def runAsync(cb: A => Unit): Unit = Par.runAsync(self)(cb)
     def runAsyncCancelable(cb: A => Unit, cancel: AtomicBoolean): Unit = Par.runAsyncCancelable(self)(cb, cancel)
