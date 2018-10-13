@@ -1,8 +1,10 @@
 package glue
 package concurrent
 
-import java.util.concurrent.{Executors, ExecutorService, ThreadFactory}
+import java.util.concurrent.{Executors, ExecutorService, ScheduledExecutorService, TimeUnit, TimeoutException, ThreadFactory}
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
+
+import scala.concurrent.{ExecutionContext, Future, SyncVar}
 
 sealed trait Par[A] {
   import Par._
@@ -71,6 +73,44 @@ sealed trait Par[A] {
       result.get
     }
   }
+
+  def run(timeout: Long): A = runWithTimeout(timeout) match {
+    case Left(e) => throw e
+    case Right(a) => a
+  }
+
+  def runWithTimeout(timeout: Long): Either[Throwable, A] = {
+    val res = new SyncVar[Either[Throwable, A]]
+    val interrupt = new AtomicBoolean(false)
+    runAsyncCancelable(a => res.put(Right(a)), interrupt)
+    res.get(timeout).getOrElse {
+      interrupt.set(true)
+      Left(new TimeoutException(s"Timed out after $timeout milliseconds."))
+    }
+  }
+
+  def withTimeout(timeout: Long)(implicit sec: ScheduledExecutorService = ExecutionModel.defaultScheduledExecutorService): Par[Either[Throwable, A]] =
+    async { cb =>
+      val done = new AtomicBoolean(false) // Original par and scheduled par will race on this
+      val cancel = new AtomicBoolean(false)
+
+      sec.schedule(new Runnable {
+        def run: Unit = {
+          // If finishes first, cancel original par
+          if (done.compareAndSet(false, true)) {
+            cancel.set(true)
+            cb(Left(new TimeoutException(s"Timed out after $timeout milliseconds.")))
+          }
+        }
+      }, timeout, TimeUnit.MILLISECONDS)
+
+      runAsyncCancelable(a => if (done.compareAndSet(false, true)) cb(Right(a)), cancel)
+    }
+
+  def after(delay: Long)(implicit sec: ScheduledExecutorService = ExecutionModel.defaultScheduledExecutorService): Par[A] =
+    schedule((), delay)(sec).flatMap(_ => this)
+
+  def runToFuture(implicit ec: ExecutionContext): Future[A] = Future { run }(ec)
 }
 
 object Par extends ParFunctions {
@@ -79,8 +119,8 @@ object Par extends ParFunctions {
   case class Delay[A](t: () => Par[A]) extends Par[A]
   case class Chain[A, B](pa: Par[A], f: A => Par[B]) extends Par[B]
 
-  def apply[A](a: => A)(implicit es: ExecutorService = ExecutionContext.defaultExecutorService): Par[A] = Async { cb =>
-    es.execute { new Runnable { def run = cb(a) } }
+  def apply[A](a: => A)(implicit es: ExecutorService = ExecutionModel.defaultExecutorService): Par[A] = Async { cb =>
+    es.execute { new Runnable { def run: Unit = cb(a) } }
   }
 
   def now[A](a: A): Par[A] = Now(a)
@@ -93,16 +133,20 @@ object Par extends ParFunctions {
 
   def delayNow[A](a: => A): Par[A] = delay(now(a))
 
-  def lazyNow[A](a: => A)(implicit es: ExecutorService = ExecutionContext.defaultExecutorService): Par[A] = fork(now(a))
+  def lazyNow[A](a: => A)(implicit es: ExecutorService = ExecutionModel.defaultExecutorService): Par[A] = fork(now(a))
 
-  def asyncF[A, B](f: A => B)(implicit es: ExecutorService = ExecutionContext.defaultExecutorService): A => Par[B] = a => lazyNow(f(a))
+  def asyncF[A, B](f: A => B)(implicit es: ExecutorService = ExecutionModel.defaultExecutorService): A => Par[B] = a => lazyNow(f(a))
+
+  def schedule[A](a: => A, delay: Long)(implicit sec: ScheduledExecutorService = ExecutionModel.defaultScheduledExecutorService): Par[A] = Async { cb =>
+    val _ = sec.schedule(new Runnable { def run = cb(a) }, delay, TimeUnit.MILLISECONDS)
+  }
 
   object syntax extends ParSyntax
 
   object implicits extends ParImplicits
 }
 
-object ExecutionContext {
+object ExecutionModel {
   private val defaultDaemonThreadFactory: ThreadFactory = new ThreadFactory {
     val defaultThreadFactory = Executors.defaultThreadFactory()
     def newThread(r: Runnable) = {
@@ -115,6 +159,10 @@ object ExecutionContext {
   val defaultExecutorService: ExecutorService = {
     Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors, defaultDaemonThreadFactory)
   }
+
+  val defaultScheduledExecutorService: ScheduledExecutorService = {
+    Executors.newScheduledThreadPool(Runtime.getRuntime.availableProcessors, defaultDaemonThreadFactory)
+  }
 }
 
 trait ParFunctions {
@@ -122,7 +170,7 @@ trait ParFunctions {
 
   def map[A, B](pa: Par[A])(f: A => B): Par[B] = pa map f
   def flatMap[A, B](pa: Par[A])(f: A => Par[B]): Par[B] = pa flatMap f
-  def fork[A](pa: => Par[A])(implicit es: ExecutorService = ExecutionContext.defaultExecutorService): Par[A] = join(Par(pa))
+  def fork[A](pa: => Par[A])(implicit es: ExecutorService = ExecutionModel.defaultExecutorService): Par[A] = join(Par(pa))
   def join[A](pa: Par[Par[A]]): Par[A] = flatMap(pa)(identity)
 
   // Not parallel
@@ -150,6 +198,18 @@ trait ParFunctions {
   def runAsyncCancelable[A](pa: Par[A])(cb: A => Unit, cancel: AtomicBoolean): Unit = pa.runAsyncCancelable(cb, cancel)
 
   def run[A](pa: Par[A]): A = pa.run
+
+  def run[A](pa: Par[A], timeout: Long): A = pa.run(timeout)
+
+  def runWithTimeout[A](pa: Par[A], timeout: Long): Either[Throwable, A] = pa.runWithTimeout(timeout)
+
+  def withTimeout[A](pa: Par[A], timeout: Long)(implicit sec: ScheduledExecutorService = ExecutionModel.defaultScheduledExecutorService): Par[Either[Throwable, A]] =
+    pa.withTimeout(timeout)(sec)
+
+  def after[A](pa: Par[A], delay: Long)(implicit sec: ScheduledExecutorService = ExecutionModel.defaultScheduledExecutorService): Par[A] =
+    pa.after(delay)(sec)
+
+  def runToFuture[A](pa: Par[A])(implicit ec: ExecutionContext): Future[A] = pa runToFuture
 
   def choose[A, B](pa: Par[A], pb: Par[B]): Par[Either[(A, Par[B]), (Par[A], B)]] = {
     Async { cb =>
@@ -268,12 +328,12 @@ trait ParFunctions {
   // Each 'a' in as is evaluated sequentially
   def sequence[A](as: List[Par[A]]): Par[List[A]] = as.foldRight(now(List[A]())) { map2(_, _) { _ :: _ } }
 
-  def sequenceR[A](as: List[Par[A]])(implicit es: ExecutorService = ExecutionContext.defaultExecutorService): Par[List[A]] = as match {
+  def sequenceR[A](as: List[Par[A]])(implicit es: ExecutorService = ExecutionModel.defaultExecutorService): Par[List[A]] = as match {
     case Nil => now(Nil)
     case h :: t => map2(h, fork(sequenceR(t)))(_ :: _)
   }
 
-  def sequenceB[A](as: IndexedSeq[Par[A]])(implicit es: ExecutorService = ExecutionContext.defaultExecutorService): Par[IndexedSeq[A]] = fork {
+  def sequenceB[A](as: IndexedSeq[Par[A]])(implicit es: ExecutorService = ExecutionModel.defaultExecutorService): Par[IndexedSeq[A]] = fork {
     if (as.isEmpty) now(Vector()) 
     else if (as.length == 1) map(as.head)(Vector(_))
     else {
@@ -282,11 +342,11 @@ trait ParFunctions {
     }
   }
 
-  def parMap[A, B](as: List[A])(f: A => B)(implicit es: ExecutorService = ExecutionContext.defaultExecutorService): Par[List[B]] = fork {
+  def parMap[A, B](as: List[A])(f: A => B)(implicit es: ExecutorService = ExecutionModel.defaultExecutorService): Par[List[B]] = fork {
     sequence(as map asyncF(f))
   }
 
-  def parFilter[A](as: List[A])(f: A => Boolean)(implicit es: ExecutorService = ExecutionContext.defaultExecutorService): Par[List[A]] = fork {
+  def parFilter[A](as: List[A])(f: A => Boolean)(implicit es: ExecutorService = ExecutionModel.defaultExecutorService): Par[List[A]] = fork {
     val pars: List[Par[Option[A]]] = as map (asyncF(a => if (f(a)) Some(a) else None))
     map(sequence(pars))(_.flatten)
   }
@@ -309,6 +369,15 @@ trait ParSyntax {
     def runAsync(cb: A => Unit): Unit = Par.runAsync(self)(cb)
     def runAsyncCancelable(cb: A => Unit, cancel: AtomicBoolean): Unit = Par.runAsyncCancelable(self)(cb, cancel)
     def run: A = Par.run(self)
+
+    def run(timeout: Long): A = self.run(timeout)
+    def runWithTimeout(timeout: Long): Either[Throwable, A] = self.runWithTimeout(timeout)
+    def withTimeout(timeout: Long)(implicit sec: ScheduledExecutorService = ExecutionModel.defaultScheduledExecutorService): Par[Either[Throwable, A]] =
+      self.withTimeout(timeout)(sec)
+    def after(delay: Long)(implicit sec: ScheduledExecutorService = ExecutionModel.defaultScheduledExecutorService): Par[A] =
+      self.after(delay)(sec)
+
+    def runToFuture(implicit ec: ExecutionContext): Future[A] = self.runToFuture(ec)
   }
 }
 
